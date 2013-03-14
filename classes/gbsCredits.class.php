@@ -71,12 +71,12 @@ class Group_Buying_Credit_Limiter_Adv extends Group_Buying_Controller {
 
 		if ( is_admin() ) {
 			// Admin options
-			add_action('add_meta_boxes', array(get_class(), 'add_meta_boxes'));
-			add_action('save_post', array( get_class(), 'save_meta_boxes' ), 100, 2 );
+			add_action( 'add_meta_boxes', array( get_class(), 'add_meta_boxes' ) );
+			add_action( 'save_post', array( get_class(), 'save_meta_boxes' ), 100, 2 );
 		}
 
 		// Merchant Options
-		add_filter( 'gb_deal_submission_fields', array( get_class(), 'filter_deal_submission_fields'), 10, 1 );
+		add_filter( 'gb_deal_submission_fields', array( get_class(), 'filter_deal_submission_fields' ), 10, 1 );
 		add_action( 'submit_deal',  array( get_class(), 'submit_deal' ), 10, 1 );
 		add_action( 'edit_deal',  array( get_class(), 'submit_deal' ), 10, 1 );
 
@@ -89,21 +89,21 @@ class Group_Buying_Credit_Limiter_Adv extends Group_Buying_Controller {
 	 * Add meta boxes to the deal post page
 	 */
 	public static function add_meta_boxes() {
-		add_meta_box('gb_credit_limiter', self::__('Credit Limit Options'), array(get_class(), 'show_meta_box'), Group_Buying_Deal::POST_TYPE, 'side', 'default');
+		add_meta_box( 'gb_credit_limiter', self::__( 'Credit Limit Options' ), array( get_class(), 'show_meta_box' ), Group_Buying_Deal::POST_TYPE, 'side', 'default' );
 	}
 
 	/**
 	 * Actually show the meta box content
 	 */
 	public static function show_meta_box( $post, $metabox ) {
-		$deal = Group_Buying_Deal::get_instance($post->ID);
+		$deal = Group_Buying_Deal::get_instance( $post->ID );
 		switch ( $metabox['id'] ) {
-			case 'gb_credit_limiter':
-				self::show_meta_box_gb_credit_limiter($deal, $post, $metabox);
-				break;
-			default:
-				self::unknown_meta_box($metabox['id']);
-				break;
+		case 'gb_credit_limiter':
+			self::show_meta_box_gb_credit_limiter( $deal, $post, $metabox );
+			break;
+		default:
+			self::unknown_meta_box( $metabox['id'] );
+			break;
 		}
 	}
 
@@ -112,15 +112,15 @@ class Group_Buying_Credit_Limiter_Adv extends Group_Buying_Controller {
 	 *
 	 * @static
 	 * @param Group_Buying_Deal $deal
-	 * @param int $post
-	 * @param array $metabox
+	 * @param int     $post
+	 * @param array   $metabox
 	 * @return void
 	 */
 	public static function show_meta_box_gb_credit_limiter( Group_Buying_Deal $deal, $post, $metabox ) {
-		$limit = self::get_credit_limit($deal->get_id()); // limit can be zero
-		?>
+		$limit = self::get_credit_limit( $deal->get_id() ); // limit can be zero
+?>
 			<p>
-				<label for="<?php echo self::LIMIT_OPTION ?>"><strong><?php echo self::_e('Credit Limit'); ?></strong></label> <input type="text" id="<?php echo self::LIMIT_OPTION ?>" name="<?php echo self::LIMIT_OPTION ?>" value="<?php echo $limit; ?>" size="2" /> <?php self::_e('per item') ?>
+				<label for="<?php echo self::LIMIT_OPTION ?>"><strong><?php echo self::_e( 'Credit Limit' ); ?></strong></label> <input type="text" id="<?php echo self::LIMIT_OPTION ?>" name="<?php echo self::LIMIT_OPTION ?>" value="<?php echo $limit; ?>" size="2" /> <?php self::_e( 'per item' ) ?>
 			</p>
 		<?php
 	}
@@ -131,7 +131,7 @@ class Group_Buying_Credit_Limiter_Adv extends Group_Buying_Controller {
 	public static function save_meta_boxes( $post_id, $post ) {
 
 		// don't do anything on autosave, auto-draft, bulk edit, or quick edit
-		if ( wp_is_post_autosave( $post_id ) || $post->post_status == 'auto-draft' || defined('DOING_AJAX') || isset($_GET['bulk_edit']) ) {
+		if ( wp_is_post_autosave( $post_id ) || $post->post_status == 'auto-draft' || defined( 'DOING_AJAX' ) || isset( $_GET['bulk_edit'] ) ) {
 			return;
 		}
 		// only continue if it's a deal post
@@ -140,7 +140,7 @@ class Group_Buying_Credit_Limiter_Adv extends Group_Buying_Controller {
 		}
 
 		// save all the meta boxes
-		self::save_meta_box_gb_credit_limiter($post_id, $post);
+		self::save_meta_box_gb_credit_limiter( $post_id, $post );
 	}
 
 	/**
@@ -148,19 +148,20 @@ class Group_Buying_Credit_Limiter_Adv extends Group_Buying_Controller {
 	 *
 	 * @static
 	 * @param Group_Buying_Deal $deal
-	 * @param int $post_id
-	 * @param object $post
+	 * @param int     $post_id
+	 * @param object  $post
 	 * @return void
 	 */
 	public static function save_meta_box_gb_credit_limiter( $post_id, $post ) {
 		$limit = isset( $_POST[self::LIMIT_OPTION] ) ? $_POST[self::LIMIT_OPTION] : '';
-		self::set_credit_limit($post_id, $limit);
+		self::set_credit_limit( $post_id, $limit );
 	}
 
 	/**
 	 * Filter the merchant submission page
-	 * @param  array $fields 
-	 * @return array         
+	 *
+	 * @param array   $fields
+	 * @return array
 	 */
 	public function filter_deal_submission_fields( $fields ) {
 		global $wp; // get_query_var won't work at this point
@@ -171,26 +172,28 @@ class Group_Buying_Credit_Limiter_Adv extends Group_Buying_Controller {
 			'type' => 'text',
 			'default' => $default,
 			'required' => FALSE,
-			'description' => self::__('Limit the amount of credits a customer can use towards this deal when purchasing.')
+			'description' => self::__( 'Limit the amount of credits a customer can use towards this deal when purchasing.' )
 		);
 		return $fields;
 	}
 
 	/**
 	 * Save the credit field after the submission
-	 * @param  Group_Buying_Deal $deal 
-	 * @return                   
+	 *
+	 * @param Group_Buying_Deal $deal
+	 * @return
 	 */
 	public function submit_deal( Group_Buying_Deal $deal ) {
 		$post_id = $deal->get_id();
 		$limit = isset( $_POST['gb_deal_'.self::LIMIT_OPTION] ) ? $_POST['gb_deal_'.self::LIMIT_OPTION] : '';
-		self::set_credit_limit($post_id, $limit);
+		self::set_credit_limit( $post_id, $limit );
 	}
 
 	/**
 	 * Do the dirty work and calculate what the credit limit for the cart is, provide an error if they go over.
-	 * @param  Group_Buying_Checkouts $checkout 
-	 * @return                            
+	 *
+	 * @param Group_Buying_Checkouts $checkout
+	 * @return
 	 */
 	public function limit_credits( Group_Buying_Checkouts $checkout ) {
 
@@ -220,22 +223,24 @@ class Group_Buying_Credit_Limiter_Adv extends Group_Buying_Controller {
 
 	/**
 	 * Get the credit limit for the deal
-	 * @param  int $deal_id
-	 * @return int          
+	 *
+	 * @param int     $deal_id
+	 * @return int
 	 */
 	public static function get_credit_limit( $deal_id ) {
-		$meta = get_post_meta($deal_id, self::LIMIT_OPTION, true );
+		$meta = get_post_meta( $deal_id, self::LIMIT_OPTION, true );
 		return $meta;
 	}
 
 	/**
 	 * Set the credit limit for the deal
-	 * @param int $deal_id 
-	 * @param int $meta  
-	 * @return int       
+	 *
+	 * @param int     $deal_id
+	 * @param int     $meta
+	 * @return int
 	 */
 	public static function set_credit_limit( $deal_id, $meta ) {
-		$meta = update_post_meta($deal_id, self::LIMIT_OPTION, $meta );
+		$meta = update_post_meta( $deal_id, self::LIMIT_OPTION, $meta );
 		return $meta;
 	}
 
