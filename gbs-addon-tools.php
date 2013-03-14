@@ -18,26 +18,16 @@ Text Domain: group-buying
  *
  * @return void
  */
-if ( !function_exists('gbs_twmp_tools_load') ) { // play nice
-	function gbs_twmp_tools_load( $addons ) {
-		$addons['twmp_tools'] = array(
-			'label' => __( 'GBS Tools' ),
-			'description' => __( 'Multiple Add-ons and Customizations for the the GBS platform.' ),
-			'files' => array(
-				dirname(__FILE__).'/classes/gbsCredits.class.php',
-				dirname(__FILE__).'/classes/gbsRewards.class.php',
-				dirname(__FILE__).'/classes/gbsVouchers.class.php'
-			),
-			'callbacks' => array(
-				array( 'GBS_Vouchers_Extension', 'init' ),
-				array( 'GBS_Rewards_Extension', 'init' ),
-				array( 'GBS_Credits_Extension', 'init' ),
-			),
-		);
-		return $addons;
+if ( !function_exists('gbs_twmp_toolchain_load') ) { // play nice
+	function gbs_twmp_toolchain_load() {
+		require dirname(__FILE__).'/classes/gbsVoucher.class.php';
+		require dirname(__FILE__).'/classes/gbsRewards.class.php';
+		require dirname(__FILE__).'/classes/gbsCredits.class.php';
+		GBS_Vouchers_Extension::init();
+		GBS_Rewards_Extension::init();
+		GBS_Credits_Extension::init();
 	}
-
-	add_filter('gb_addons', 'gbs_twmp_tools_load', 10, 1);
+	add_action( 'plugins_loaded', 'gbs_twmp_toolchain_load', 1000 ); // Attempt to load up the toolchain after the other plugins.
 }
 
 /**
@@ -48,7 +38,6 @@ if ( !function_exists( 'gb_load_custom_offsite_purchase_gateway' ) ) {
 		require_once( dirname(__FILE__). '/classes/payment_processors/OffsitePayments.class.php');
 		Group_Buying_Offsite_Manual_Purchasing_Custom::register();
 	}
-
 	add_action('gb_register_processors', 'gb_load_custom_offsite_purchase_gateway');
 }
 
