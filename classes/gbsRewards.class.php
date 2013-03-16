@@ -108,10 +108,15 @@ class GB_Affiliates_Ext {
 		foreach ( $vouchers as $voucher_id ) {
 			$voucher = Group_Buying_Voucher::get_instance( $voucher_id );
 			if ( $voucher->is_active() ) { // Check to make sure the voucher is active
-				$deal_id = $voucher->get_deal_id();
-				$account_id = $affiliate_account->get_id();
-				// apply the credits but base it off Group_Buying_Deal_Rewards::get_product_credits again.
-				$credit += Group_Buying_Deal_Rewards::get_product_credits( $deal_id, $account_id, $affiliate_account, $set_current_time );
+				if ( class_exists('Group_Buying_Deal_Rewards') ) {
+					$deal_id = $voucher->get_deal_id();
+					$account_id = $affiliate_account->get_id();
+					// apply the credits but base it off Group_Buying_Deal_Rewards::get_product_credits again.
+					$credit += Group_Buying_Deal_Rewards::get_product_credits( $deal_id, $account_id, $affiliate_account, $set_current_time );
+				} else { // fallback in case Deal Based Rewards is not active.
+					$credit = $applied_credits; // this will be set multiple times but be the same.
+					if ( GBS_DEV ) error_log( "deal based rewards class not found: " . print_r( $applied_credits, true ) );
+				}
 			}
 		}
 		// If we have credits apply them, fire an action and send the notification
