@@ -62,7 +62,7 @@ class GBS_Credits_Extension {
 }
 
 class Group_Buying_Credit_Limiter_Adv extends Group_Buying_Controller {
-	const LIMIT_OPTION = 'gb_credit_limiter';
+	const LIMIT_OPTION = '_gb_credit_limiter';
 	private static $limit;
 	const DEBUG = TRUE;
 
