@@ -1,7 +1,10 @@
 <?php
 
 class GBS_Vouchers_Extension {
-
+	const NOTIFICATION_TYPE = 'voucher_payment_reminder_notification';
+	const NOTIFICATION_TYPE_3DAY = 'voucher_payment_reminder_notification_3day';
+	const NOTIFICATION_TYPE_FINAL = 'voucher_payment_reminder_notification_final';
+	const NOTIFICATION_SENT_META_KEY = '_gb_voucher_notification_sent10';
 	/** @var GBS_Vouchers_Extension */
 	private static $instance;
 
@@ -21,8 +24,154 @@ class GBS_Vouchers_Extension {
 				array( 'GBS_VoucherExpiry_Addon_Adv', 'init' ),
 			),
 		);
+		$addons['gbs_voucher_notifications_addon'] = array(
+			'label' => __( 'Send Notification Reminders to Purchasers' ),
+			'description' => __( 'Send a reminder to purchasers 1-day after purchase to remind them to pay; Send a notification to the purchaser if the voucher is not activated within 3-days; After the deal tips and the voucher has not been activated they must pay within the next day.' ),
+			'files' => array(
+				__FILE__,
+				dirname( __FILE__ ) . '/library/template-tags.php',
+			),
+			'callbacks' => array(
+				array( __CLASS__, 'voucher_notification_hooks' ),
+			),
+		);
 		return $addons;
 	}
+
+	public function voucher_notification_hooks() {
+		// Find notification to be sent
+		add_action( 'init', array( get_class(), 'find_pending_vouchers' ) );
+
+		// Register Notifications
+		add_filter( 'gb_notification_types', array( get_class(), 'register_notification_type' ), 10, 1 );
+		//add_filter( 'gb_notification_shortcodes', array( get_class(), 'register_notification_shortcodes' ), 10, 1 );
+	}
+
+	public function find_pending_vouchers() {
+
+		// Filter the post query so that it returns only pending vouchers a day+ old
+		add_filter( 'posts_where', array( get_class(), 'filter_where' ) );
+		$args = array(
+				'post_type' => Group_Buying_Voucher::POST_TYPE,
+				'post_status' => 'pending',
+				'posts_per_page' => -1,
+				'fields' => 'ids',
+				'gb_bypass_filter' => TRUE );
+		$vouchers = new WP_Query($args);
+		remove_filter( 'posts_where', array( get_class(), 'filter_where' ) );
+
+		foreach ( $vouchers->posts as $voucher_id ) {
+			self::maybe_send_notification( $voucher_id );
+		}
+		
+	}
+
+	public function register_notification_type( $notifications ) {
+		$notifications[self::NOTIFICATION_TYPE] = array(
+			'name' => gb__( 'Payment Reminder (1-day)' ),
+			'description' => gb__( "Customize the notification sent to the customer one day after purchase, if their voucher is still not activated. This notice will be sent per voucher, not per purchase." ),
+			'shortcodes' => array( 'date', 'name', 'username', 'purchase_details', 'transid', 'site_title', 'site_url', 'credits_used', 'rewards_used', 'total', 'billing_address', 'shipping_address', 'voucher_url', 'voucher_logo', 'voucher_serial', 'voucher_expiration', 'voucher_how_to', 'voucher_locations', 'voucher_fine_print', 'voucher_security' ),
+			'default_title' => gb__( 'Payment Reminder ' . get_bloginfo( 'name' ) ),
+			'default_content' => sprintf( 'This is a reminder that you need to pay for your voucher before it will be automatically removed from your account at %s.', get_bloginfo( 'name' ) ),
+			'allow_preference' => TRUE
+		);
+		$notifications[self::NOTIFICATION_TYPE_3DAY] = array(
+			'name' => gb__( 'Payment Reminder (3-day)' ),
+			'description' => gb__( "Customize the notification sent to the customer three days after purchase, if their voucher is still not activated. This notice will be sent per voucher, not per purchase." ),
+			'shortcodes' => array( 'date', 'name', 'username', 'purchase_details', 'transid', 'site_title', 'site_url', 'credits_used', 'rewards_used', 'total', 'billing_address', 'shipping_address' ),
+			'default_title' => gb__( 'Payment Reminder ' . get_bloginfo( 'name' ) ),
+			'default_content' => sprintf( 'This is a reminder that you need to pay for your voucher before it will be automatically removed from your account at %s.', get_bloginfo( 'name' ) ),
+			'allow_preference' => TRUE
+		);
+		$notifications[self::NOTIFICATION_TYPE_FINAL] = array(
+			'name' => gb__( 'Payment Reminder (final notice after tip)' ),
+			'description' => gb__( "Customize the notification sent to the customer immediately after a deal tips, if their voucher is still not activated. This notice will be sent per voucher, not per purchase." ),
+			'shortcodes' => array( 'date', 'name', 'username', 'purchase_details', 'transid', 'site_title', 'site_url', 'credits_used', 'rewards_used', 'total', 'billing_address', 'shipping_address' ),
+			'default_title' => gb__( 'Payment Reminder ' . get_bloginfo( 'name' ) ),
+			'default_content' => sprintf( 'This is a reminder that you need to pay for your voucher before it will be automatically removed from your account at %s.', get_bloginfo( 'name' ) ),
+			'allow_preference' => TRUE
+		);
+		return $notifications;
+	}
+
+	public function maybe_send_notification( $voucher_id, $set_current_time = 0 ) {
+		
+		// Check if final notification was sent, if so we don't want to send any others.
+		if ( self::was_notification_sent( $voucher_id, self::NOTIFICATION_TYPE_FINAL ) )
+			return FALSE;
+
+		$voucher = Group_Buying_Voucher::get_instance( $voucher_id );
+		$deal = $voucher->get_deal();
+
+		// Attempt to send the final notification first, since it's of higher priority and we don't want to send
+		// the 1/3 day notifications immediately before this one in case the customer just purchased before the deal closure.
+		if ( $deal->is_closed() ) {
+			self::voucher_notification( self::NOTIFICATION_TYPE_FINAL, $voucher );
+			return TRUE;
+		}
+
+		// Date based notifications
+		$voucher_date = get_the_time( 'U', $voucher_id );
+		$set_current_time = ( $set_current_time ) ? $set_current_time : current_time('timestamp'); // Allow the time to be set.
+
+		// If the voucher is older than 3 days we can assume the 1 day voucher notification was already sent.
+		if ( $voucher_date <= ( $set_current_time - 259200 ) ) { // If older than three days
+			self::voucher_notification( self::NOTIFICATION_TYPE_3DAY, $voucher );
+			return TRUE;
+		}
+
+		// If we got this far no notifications have been sent at all.
+		if ( $voucher_date <= ( $set_current_time - 86400 ) ) { // If older than one day
+			self::voucher_notification( self::NOTIFICATION_TYPE, $voucher );
+			return TRUE;
+		}
+
+		return FALSE;
+	}
+
+	function voucher_notification( $type, Group_Buying_Voucher $voucher ) {
+		$voucher_id = $voucher->get_id();
+		if ( self::was_notification_sent( $voucher_id, $type ) )
+			return FALSE;
+
+		$purchase = $voucher->get_purchase();
+		$deal = $voucher->get_deal();
+
+		$user_id = $purchase->get_user();
+		if ( $user_id !== -1 ) { // purchase will be set to -1 if it's a gift.
+			$recipient = Group_Buying_Notifications::get_user_email( $user_id );
+
+			$data = array(
+				'user_id' => $user_id,
+				'voucher' => $voucher,
+				'purchase' => $purchase,
+				'deal' => $deal
+			);
+
+			Group_Buying_Notifications::send_notification( $type, $data, $to );
+			self::mark_notification_sent( $voucher_id, $type );
+		}
+	}
+
+	public function mark_notification_sent( $voucher_id, $type ) {
+		return update_post_meta( $voucher_id, self::NOTIFICATION_SENT_META_KEY.'_'.$type, time() );
+	}
+
+	public function was_notification_sent( $voucher_id, $type ) {
+		$notification_sent = get_post_meta( $voucher_id, self::NOTIFICATION_SENT_META_KEY.'_'.$type, TRUE );
+		if ( $notification_sent ) {
+			return TRUE;
+		}
+		return;
+	}
+	
+	public function filter_where( $where = '' ) {
+		// posts 1+ old
+		$where .= " AND post_date <= '" . date('Y-m-d', strtotime('-1 day')) . "'";
+		return $where;
+	}
+
+
 
 	/********** Singleton *************/
 
