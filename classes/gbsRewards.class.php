@@ -16,7 +16,7 @@ class GB_Affiliates_Ext {
 	public static function load_custom_addons( $addons ) {
 		$addons['affiliate_credit_restrictions_pwc'] = array(
 			'label' => __( 'Deal Based Rewards Modification' ),
-			'description' => __( 'Only apply credits if the purchase used credits and allow for merchants to edit the credit field. This requires "Deal Based Rewards" to be loaded.' ),
+			'description' => __( 'Only apply credits if the purchase used credits and allow for merchants to edit the credit field. This requires "Deal Based Rewards" add-on to be loaded/activated.' ),
 			'files' => array(
 				__FILE__,
 				dirname( __FILE__ ) . '/library/template-tags.php',
@@ -50,7 +50,7 @@ class GB_Affiliates_Ext {
 	}
 
 	public function add_delay_hooks() {
-		remove_action( 'gb_apply_credits', array( 'Group_Buying_Notifications', 'applied_credits' ), 10, 4 );
+		remove_action( 'gb_apply_credits', array( 'Group_Buying_Notifications', 'applied_credits' ) );
 		add_action( 'gb_apply_credits', array( get_class(), 'delay_credits' ), 10, 1 );
 
 		add_action( 'gb_cron', array( get_class(), 'find_delayed_credits' ) );
@@ -74,7 +74,12 @@ class GB_Affiliates_Ext {
 			'credit_type' => $credit_type,
 			'current_time' => current_time('timestamp')
 		);
-		Group_Buying_Records::new_record( '', self::RECORD_TYPE, 'Delayed Credit: #'.$data['account_id'], $data['account_id'], $data['account_id'], $data );
+		$record_id = Group_Buying_Records::new_record( '', self::RECORD_TYPE, 'Delayed Credit: #'.$data['account_id'], $data['account_id'], $data['account_id'], $data );
+		if ( !$record_id ) {
+			$records = Group_Buying_Record::get_records_by_type_and_association( $data['account_id'], self::RECORD_TYPE );
+			$record_id = max( $records );
+		}
+		do_action( 'delay_credits_function', $record_id, $affiliate_account, $payment, $applied_credits, $credit_type );
 
 	}
 
