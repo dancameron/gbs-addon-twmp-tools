@@ -71,7 +71,7 @@ class GB_Affiliates_Ext {
 		remove_action( 'gb_apply_credits', array( 'Group_Buying_Notifications', 'applied_credits' ) );
 		add_action( 'gb_apply_credits', array( get_class(), 'delay_credits' ), 10, 1 );
 
-		add_action( 'gb_cron', array( get_class(), 'find_delayed_credits' ) );
+		add_action( 'init', array( get_class(), 'find_delayed_credits' ) );
 	}
 
 	////////////////
@@ -105,9 +105,34 @@ class GB_Affiliates_Ext {
 
 		// filter to get 14+ day old records
 		add_filter( 'posts_where', array( get_class(), 'filter_where' ) );
-		$record_ids = Group_Buying_Post_Type::find_by_meta( Group_Buying_Record::POST_TYPE, array( '_type' => self::RECORD_TYPE ) );
-		remove_filter( 'posts_where', array( get_class(), 'filter_where' ) );
-		// Remove filter
+		if ( defined( Group_Buying_Record::TAXONOMY ) && taxonomy_exists( Group_Buying_Record::TAXONOMY ) ) { // In case the records post type moves to use taxonomies and not meta for types.
+			$args = array(
+				'post_type' => Group_Buying_Record::POST_TYPE,
+				'post_status' => 'pending',
+				'posts_per_page' => -1,
+				'fields' => 'ids',
+				'gb_bypass_filter' => TRUE,
+				Group_Buying_Record::TAXONOMY => self::RECORD_TYPE
+					 );
+		}
+		else {
+			$args = array(
+				'post_type' => Group_Buying_Record::POST_TYPE,
+				'post_status' => 'pending',
+				'posts_per_page' => -1,
+				'fields' => 'ids',
+				'gb_bypass_filter' => TRUE,
+				'meta_query' => array(
+							array( 'key' => '_type', 'value' => self::RECORD_TYPE )
+						)
+					 );
+		}
+		$records = new WP_Query($args);
+		$record_ids = $records->posts;
+		remove_filter( 'posts_where', array( get_class(), 'filter_where' ) ); // Remove filter
+		
+		if ( empty( $record_ids ) )
+			return;
 
 		// Loop through all the records and attempt to apply credits, or delete.
 		foreach ( $record_ids as $record_id ) {
