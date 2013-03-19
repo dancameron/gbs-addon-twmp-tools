@@ -14,15 +14,25 @@ class GB_Affiliates_Ext {
 	}
 
 	public static function load_custom_addons( $addons ) {
-		$addons['affiliate_credit_restrictions_pwc'] = array(
-			'label' => __( 'Deal Based Rewards Modification' ),
-			'description' => __( 'Only apply credits if the purchase used credits and allow for merchants to edit the credit field. This requires "Deal Based Rewards" add-on to be loaded/activated.' ),
+		$addons['affiliate_credit_restrictions_merchant_edit'] = array(
+			'label' => __( 'Deal Based Rewards Modification (Merchants)' ),
+			'description' => __( 'Allow for merchants to edit the credit field for each deal. This requires "Deal Based Rewards" add-on to be loaded/activated.' ),
 			'files' => array(
 				__FILE__,
 				dirname( __FILE__ ) . '/library/template-tags.php',
 			),
 			'callbacks' => array(
 				array( __CLASS__, 'add_pwc_hooks' ),
+			),
+		);
+		$addons['affiliate_credit_restrictions_percentage'] = array(
+			'label' => __( 'Deal Based Rewards Modification (Purchase Limits' ),
+			'description' => __( 'If both money and credits are used for a purchase then cashback should be earned proportionally for the portion of the purchase that money was used. This requires "Deal Based Rewards" add-on to be loaded/activated.' ),
+			'files' => array(
+				__FILE__
+			),
+			'callbacks' => array(
+				array( __CLASS__, 'add_calc_restriction_hooks' ),
 			),
 		);
 		$addons['affiliate_credit_restrictions_delay'] = array(
@@ -40,13 +50,21 @@ class GB_Affiliates_Ext {
 	}
 
 	public function add_pwc_hooks() {
-		// prevent credits when a purchase uses credits
-		add_filter( 'gb_dbr_prevent_credits_from_a_credit_purchase', '__return_true' );
-
 		// Merchant Options
 		add_filter( 'gb_deal_submission_fields', array( get_class(), 'filter_deal_submission_fields' ), 10, 1 );
 		add_action( 'submit_deal',  array( get_class(), 'submit_deal' ), 10, 1 );
 		add_action( 'edit_deal',  array( get_class(), 'submit_deal' ), 10, 1 );
+	}
+
+	public function add_calc_restriction_hooks() {
+		/**
+		 * Deal Based Rewards has these restrictions built in now, otherwise their abstraction would be too complex
+		 * and possibly cause serious problems with my health while testing.
+		 */
+		// prevent credits when a purchase uses credits
+		add_filter( 'gb_dbr_prevent_credits_from_a_credit_purchase', '__return_true' );
+		// calculate based off the credits used
+		add_filter( 'gb_dbr_calculate_credits_based_on_credits_used', '__return_true' );
 	}
 
 	public function add_delay_hooks() {
