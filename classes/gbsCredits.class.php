@@ -120,7 +120,7 @@ class Group_Buying_Credit_Limiter_Adv extends Group_Buying_Controller {
 		$limit = self::get_credit_limit( $deal->get_id() ); // limit can be zero
 ?>
 			<p>
-				<label for="<?php echo self::LIMIT_OPTION ?>"><strong><?php echo self::_e( 'Credit Limit' ); ?></strong></label> <input type="text" id="<?php echo self::LIMIT_OPTION ?>" name="<?php echo self::LIMIT_OPTION ?>" value="<?php echo $limit; ?>" size="2" /> <?php self::_e( 'per item' ) ?>
+				<label for="<?php echo self::LIMIT_OPTION ?>"><strong><?php echo self::_e( 'Credit Limit' ); ?></strong></label> <input type="text" id="<?php echo self::LIMIT_OPTION ?>" name="<?php echo self::LIMIT_OPTION ?>" value="<?php echo $limit; ?>" size="2" />% <?php self::_e( 'per item' ) ?>
 			</p>
 		<?php
 	}
@@ -206,9 +206,9 @@ class Group_Buying_Credit_Limiter_Adv extends Group_Buying_Controller {
 				$deal = Group_Buying_Deal::get_instance( $item['deal_id'] );
 				$limit = self::get_credit_limit( $item['deal_id'] );
 				if ( $limit !== '' ) {
-					$total_allowed += $limit*$item['quantity'];
+					$total_allowed += ($deal->get_price( NULL, $item['data'] )*$item['quantity'])*($limit/100);
 				}
-				else { // if not limit is set add the total price to the allowed amount
+				else { // if limit is not set, add the total to the allowed amount
 					$total_allowed += $deal->get_price( NULL, $item['data'] )*$item['quantity'];
 				}
 			}
