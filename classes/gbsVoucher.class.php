@@ -5,6 +5,8 @@ class GBS_Vouchers_Extension {
 	const NOTIFICATION_TYPE_3DAY = 'voucher_payment_reminder_notification_3day';
 	const NOTIFICATION_TYPE_FINAL = 'voucher_payment_reminder_notification_final';
 	const NOTIFICATION_SENT_META_KEY = '_gb_voucher_notification_sent10';
+	const NONCE = 'vouchers_extension_nonce';
+
 	/** @var GBS_Vouchers_Extension */
 	private static $instance;
 
@@ -13,7 +15,7 @@ class GBS_Vouchers_Extension {
 	}
 
 	public static function load_custom_addons( $addons ) {
-		$addons['gbs_sf_advvoucherexpiry_addon'] = array(
+		$addons['voucherexpiry'] = array(
 			'label' => __( 'Adv. Voucher Expiry (Advanced)' ),
 			'description' => __( 'Add option for Voucher Expiration by Days after Purchase. Disable access to vouchers after expiration.' ),
 			'files' => array(
@@ -24,15 +26,24 @@ class GBS_Vouchers_Extension {
 				array( 'GBS_VoucherExpiry_Addon_Adv', 'init' ),
 			),
 		);
-		$addons['gbs_voucher_notifications_addon'] = array(
+		$addons['voucher_notifications_addon'] = array(
 			'label' => __( 'Send Notification Reminders to Purchasers' ),
 			'description' => __( 'Send a reminder to purchasers 1-day after purchase to remind them to pay; Send a notification to the purchaser if the voucher is not activated within 3-days; After the deal tips and the voucher has not been activated they must pay within the next day.' ),
 			'files' => array(
 				__FILE__,
-				dirname( __FILE__ ) . '/library/template-tags.php',
 			),
 			'callbacks' => array(
 				array( __CLASS__, 'voucher_notification_hooks' ),
+			),
+		);
+		$addons['voucher_merchant_activation'] = array(
+			'label' => __( 'Merchant Activation/Deactivation' ),
+			'description' => __( 'Allow for merchant to activate and deactivate vouchers from the vouchers report.' ),
+			'files' => array(
+				__FILE__,
+			),
+			'callbacks' => array(
+				array( __CLASS__, 'voucher_merchant_activation_hooks' ),
 			),
 		);
 		return $addons;
@@ -45,6 +56,13 @@ class GBS_Vouchers_Extension {
 		// Register Notifications
 		add_filter( 'gb_notification_types', array( get_class(), 'register_notification_type' ), 10, 1 );
 		//add_filter( 'gb_notification_shortcodes', array( get_class(), 'register_notification_shortcodes' ), 10, 1 );
+	}
+
+	public function voucher_merchant_activation_hooks() {
+		add_filter( 'set_merchant_voucher_report_data_column', array( get_class(), 'set_voucher_report_data_column' ), 10, 1 );
+		add_filter( 'set_merchant_voucher_report_data_records', array( get_class(), 'set_voucher_report_data_records' ), 10, 1 );
+		add_action( 'wp_ajax_gb_merchant_toggle_voucher_status',  array( get_class(), 'toggle_status' ), 10, 0 );
+		add_action( 'wp_footer', array( get_class(), 'print_js' ) );
 	}
 
 	public function find_pending_vouchers() {
@@ -169,6 +187,109 @@ class GBS_Vouchers_Extension {
 		// posts 1+ old
 		$where .= " AND post_date <= '" . date('Y-m-d', strtotime('-1 day')) . "'";
 		return $where;
+	}
+
+	public static function set_voucher_report_data_column( $columns ) {
+		$columns['activation_links'] = gb__( 'Management' );
+		return $columns;
+	}
+
+	public static function set_voucher_report_data_records( $array ) {
+		if ( !is_array( $array ) ) {
+			return; // nothing to do.
+		}
+		$new_array = array();
+		foreach ( $array as $records ) {
+			$mngt_item = array( 'activation_links' => self::activate_buttons( $records['voucher_id'] ) );
+			$new_array[] = array_merge( $records, $mngt_item );
+		}
+		return $new_array;
+	}
+
+	public function activate_buttons( $voucher_id ) {
+		if ( get_post_status( $voucher_id ) != 'publish' ) {
+			$view = '<p><span id="'.$voucher_id.'_activate_result"></span><a href="javascript:void(0)" class="gb_activate button btn" id="'.$voucher_id.'_activate" ref="'.$voucher_id.'">'.gb__('Activate').'</a></p>';
+		} else {
+			$view = '<p><span id="'.$voucher_id.'_deactivate_result"></span><a href="javascript:void(0)" class="gb_deactivate button alt_button btn btn_inverse" id="'.$voucher_id.'_deactivate" ref="'.$voucher_id.'">'.gb__('Deactivate').'</a></p>';
+		}
+		return $view;
+	}
+
+	public function print_js() {
+		?>
+			<script type="text/javascript" charset="utf-8">
+			jQuery(document).ready(function($){
+				var voucher_activation_ajax_url = '<?php echo admin_url() ?>admin-ajax.php';
+				jQuery(".gb_activate").on('click', function(event) {
+					event.preventDefault();
+						if( confirm( '<?php gb_e("Are you sure? This will make the voucher immediately available for download.") ?>' ) ){
+							var $activate_voucher_id = $( this ),
+							activate_voucher_id = $activate_voucher_id.attr( 'ref' );
+							$( "#"+activate_voucher_id+"_activate" ).fadeOut('slow');
+							$.post( voucher_activation_ajax_url, { action: 'gb_merchant_toggle_voucher_status', voucher_id: activate_voucher_id, activate_voucher_nonce: '<?php echo wp_create_nonce( self::NONCE ) ?>' },
+								function( data ) {
+										$( "#"+activate_voucher_id+"_activate_result" ).append( '<?php gb_e( 'Activated' ) ?>' ).fadeIn();
+									}
+								);
+						} else {
+							// nothing to do.
+						}
+				});
+				jQuery(".gb_deactivate").on('click', function(event) {
+					event.preventDefault();
+						if( confirm( '<?php gb_e("Are you sure? This will immediately remove the voucher from customer access.") ?>' ) ) {
+							var $deactivate_button = $( this ),
+							deactivate_voucher_id = $deactivate_button.attr( 'ref' );
+							$( "#"+deactivate_voucher_id+"_deactivate" ).fadeOut('slow');
+							$.post( voucher_activation_ajax_url, { action: 'gb_merchant_toggle_voucher_status', voucher_id: deactivate_voucher_id, activate_voucher_nonce: '<?php echo wp_create_nonce( self::NONCE ) ?>' },
+								function( data ) {
+										$( "#"+deactivate_voucher_id+"_deactivate_result" ).append( '<?php gb_e( 'Deactivated' ) ?>' ).fadeIn();
+									}
+								);
+						} else {
+							// nothing to do.
+						}
+				});
+			});
+		</script>
+		<?php
+	}
+
+	public static function toggle_status() {
+		if ( !isset( $_REQUEST['activate_voucher_nonce'] ) )
+			wp_die( 'Forget something?' );
+
+		$nonce = $_REQUEST['activate_voucher_nonce'];
+		if ( !wp_verify_nonce( $nonce, self::NONCE ) )
+        	wp_die( 'Not going to fall for it!' );
+
+        // Get the voucher object
+        $voucher_id = $_REQUEST['voucher_id'];
+        $voucher = Group_Buying_Voucher::get_instance( $voucher_id );
+        if ( !is_a( $voucher, 'Group_Buying_Voucher' ) )
+				return;
+
+		// Check to make sure this merchant can activate/deactivate this deal
+        $deal_id = $voucher->get_deal_id();
+        $deal_merchant_id = gb_get_merchant_id( $deal_id );
+        $authorized_merchants = gb_get_merchants_by_account( get_current_user_id() );
+        if ( !empty( $authorized_merchants ) && in_array( $deal_merchant_id, $authorized_merchants ) ) {
+        	// If active than we are deactivating
+			if ( $voucher->is_active() ) {
+				if ( method_exists( $voucher, 'mark_pending' ) ) { // added in future release
+					$voucher->mark_pending();
+				}
+				else {
+					$post_obj = get_post( $voucher_id );
+					$post_obj->post_status = 'pending';
+					wp_update_post( $post_obj );
+					do_action( 'voucher_marked_pending', $this );
+				}
+			} 
+			else {
+				$voucher->activate();
+			}
+		}
 	}
 
 
