@@ -26,7 +26,7 @@ class GB_Affiliates_Ext {
 			),
 		);
 		$addons['affiliate_credit_restrictions_percentage'] = array(
-			'label' => __( 'Deal Based Rewards Modification (Purchase Limits' ),
+			'label' => __( 'Deal Based Rewards Modification (Purchase Limits)' ),
 			'description' => __( 'If both money and credits are used for a purchase then cashback should be earned proportionally for the portion of the purchase that money was used. This requires "Deal Based Rewards" add-on to be loaded/activated.' ),
 			'files' => array(
 				__FILE__
