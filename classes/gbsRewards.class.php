@@ -37,7 +37,7 @@ class GB_Affiliates_Ext {
 		);
 		$addons['affiliate_credit_restrictions_delay'] = array(
 			'label' => __( 'Affiliate Credits Restrictions (14-day delay)' ),
-			'description' => __( 'Delay all credits 14 days to verify if voucher is active.' ),
+			'description' => __( 'Delay all credits 15 days to verify if voucher is active. ' ),
 			'files' => array(
 				__FILE__,
 				dirname( __FILE__ ) . '/library/template-tags.php',
@@ -65,13 +65,16 @@ class GB_Affiliates_Ext {
 		add_filter( 'gb_dbr_prevent_credits_from_a_credit_purchase', '__return_true' );
 		// calculate based off the credits used
 		add_filter( 'gb_dbr_calculate_credits_based_on_credits_used', '__return_true' );
+		// allow for customers to a credit more than once.
+		add_filter( 'gb_rewards_get_account_share_records', '__return_empty_array' );
 	}
 
 	public function add_delay_hooks() {
 		remove_action( 'gb_apply_credits', array( 'Group_Buying_Notifications', 'applied_credits' ) );
-		add_action( 'gb_apply_credits', array( get_class(), 'delay_credits' ), 10, 1 );
+		add_action( 'gb_apply_credits', array( get_class(), 'delay_credits' ), 10, 4 );
 
-		add_action( 'init', array( get_class(), 'find_delayed_credits' ) );
+		// add_action( 'init', array( get_class(), 'find_delayed_credits' ) ); // TODO switch
+		add_action( 'gb_cron', array( get_class(), 'find_delayed_credits' ) );
 	}
 
 	////////////////
@@ -92,11 +95,13 @@ class GB_Affiliates_Ext {
 			'credit_type' => $credit_type,
 			'current_time' => current_time('timestamp')
 		);
+		if ( GBS_DEV ) error_log( "record data: " . print_r( $data, true ) );
 		$record_id = Group_Buying_Records::new_record( '', self::RECORD_TYPE, 'Delayed Credit: #'.$data['account_id'], $data['account_id'], $data['account_id'], $data );
 		if ( !$record_id ) {
 			$records = Group_Buying_Record::get_records_by_type_and_association( $data['account_id'], self::RECORD_TYPE );
 			$record_id = max( $records );
 		}
+		if ( GBS_DEV ) error_log( "record record_id: " . print_r( $record_id, true ) );
 		do_action( 'delay_credits_function', $record_id, $affiliate_account, $payment, $applied_credits, $credit_type );
 
 	}
@@ -130,7 +135,7 @@ class GB_Affiliates_Ext {
 		$records = new WP_Query($args);
 		$record_ids = $records->posts;
 		remove_filter( 'posts_where', array( get_class(), 'filter_where' ) ); // Remove filter
-		
+
 		if ( empty( $record_ids ) )
 			return;
 
@@ -138,50 +143,57 @@ class GB_Affiliates_Ext {
 		foreach ( $record_ids as $record_id ) {
 			$record = Group_Buying_Record::get_instance( $record_id );
 			$data = $record->get_data();
-			$affiliate_account = Group_Buying_Account::get_instance( $data['account_id'] );
+			$affiliate_account = Group_Buying_Account::get_instance_by_id( $data['account_id'] );
 			$payment = Group_Buying_Payment::get_instance( $data['payment_id'] );
 			$applied = self::maybe_apply_credit( $affiliate_account, $payment, $data['credits'], $data['credit_type'], $data['current_time'] );
-			if ( !$applied ) { // If not applied the credit is no longer valid.
+			if ( GBS_DEV ) error_log( "applied: " . print_r( $applied, true ) );
+			if ( $applied < 0 || $applied > 0 ) { // If applied remove the record, -1 is given if the record should not be checked again.
 				wp_delete_post( $record_id, TRUE );
 			}
 		}
 	}
 
 	public function maybe_apply_credit( Group_Buying_Account $affiliate_account, Group_Buying_Payment $payment, $applied_credits, $credit_type, $set_current_time ) {
+		$purchaser_account = $payment->get_account();
 		$purchase_id = $payment->get_purchase();
 
 		// Loop through all the vouchers associated with the payment and tally up the credits that apply.
 		$credit = 0;
-		$vouchers = Group_Buying_Post_Type::find_by_meta( self::POST_TYPE, array( '_purchase_id' => $purchase_id ) );
+		$vouchers = Group_Buying_Post_Type::find_by_meta( Group_Buying_Voucher::POST_TYPE, array( '_purchase_id' => $purchase_id ) );
 		foreach ( $vouchers as $voucher_id ) {
 			$voucher = Group_Buying_Voucher::get_instance( $voucher_id );
 			if ( $voucher->is_active() ) { // Check to make sure the voucher is active
 				if ( class_exists('Group_Buying_Deal_Rewards') ) {
 					$deal_id = $voucher->get_deal_id();
-					$account_id = $affiliate_account->get_id();
+					$user_id = $affiliate_account->get_user_id();
+					if ( GBS_DEV ) error_log( "user id: " . print_r( $user_id, true ) );
 					// apply the credits but base it off Group_Buying_Deal_Rewards::get_product_credits again.
-					$credit += Group_Buying_Deal_Rewards::get_product_credits( $deal_id, $account_id, $affiliate_account, $set_current_time );
+					$credit += Group_Buying_Deal_Rewards::get_product_credits( $deal_id, $user_id, $affiliate_account, $purchaser_account, $set_current_time );
+					if ( GBS_DEV ) error_log( "active voucher credits: " . print_r( $credit, true ) );
 				} else { // fallback in case Deal Based Rewards is not active.
 					$credit = $applied_credits; // this will be set multiple times but be the same.
 					if ( GBS_DEV ) error_log( "deal based rewards class not found: " . print_r( $applied_credits, true ) );
 				}
+			} 
+			else {
+				return -1; // don't allow for this check again since a voucher not activated after 14 days is not good.
 			}
 		}
+		if ( GBS_DEV ) error_log( "credit to apply back: " . print_r( $credit, true ) );
 		// If we have credits apply them, fire an action and send the notification
 		if ( $credit ) {
 			$affiliate_account->add_credit( $credit, $credit_type );
 			do_action( 'gb_apply_credits_with_reg_restriction', $affiliate_account, $payment, $credit, $credit_type );
 			// Fire off the notification manually
 			Group_Buying_Notifications::applied_credits( $affiliate_account, $payment, $credit, $credit_type );
-			return $credit;
 		}
-		return;
+		return $credit;
 		
 	}
 	
 	public function filter_where( $where = '' ) {
-		// posts 14+ old
-		$where .= " AND post_date <= '" . date('Y-m-d', strtotime('-14 days')) . "'";
+		// posts 15+ old
+		$where .= " AND post_date <= '" . date('Y-m-d', strtotime('-15 days')) . "'"; // TODO
 		return $where;
 	}
 

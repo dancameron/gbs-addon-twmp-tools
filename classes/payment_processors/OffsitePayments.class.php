@@ -21,8 +21,6 @@ class Group_Buying_Offsite_Manual_Purchasing_Custom extends Group_Buying_Offsite
 		add_action( 'admin_init', array( $this, 'register_settings' ), 10, 0 );
 
 		add_filter( 'gb_checkout_payment_controls', array( $this, 'payment_controls' ), 20, 2 );
-
-//		remove_action( 'payment_captured', array( 'Group_Buying_Vouchers', 'activate_vouchers' ), 10, 2 );
 	}
 
 	public static function register() {

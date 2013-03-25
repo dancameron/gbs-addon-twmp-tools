@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: Group Buying Addon - GBS Tools
-Version: 0.7
+Version: 0.8
 Description: Multiple Add-ons and Customizations for the the GBS platform.
 Plugin URI: http://groupbuyingsite.com/
 Author: GroupBuyingSite.com
@@ -11,7 +11,6 @@ Plugin Author URI: http://sproutventure.com/
 Contributors: Dan Cameron
 Text Domain: group-buying
 */
-
 
 /**
  * Load all the plugin files and initialize appropriately
@@ -40,4 +39,3 @@ if ( !function_exists( 'gb_load_custom_offsite_purchase_gateway' ) ) {
 	}
 	add_action('gb_register_processors', 'gb_load_custom_offsite_purchase_gateway');
 }
-
