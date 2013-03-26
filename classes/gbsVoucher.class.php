@@ -52,6 +52,7 @@ class GBS_Vouchers_Extension {
 	public function voucher_notification_hooks() {
 		// Find notification to be sent
 		add_action( 'init', array( get_class(), 'find_pending_vouchers' ) );
+		// add_action( 'gb_cron', array( get_class(), 'find_pending_vouchers' ) );
 
 		// Register Notifications
 		add_filter( 'gb_notification_types', array( get_class(), 'register_notification_type' ), 10, 1 );
@@ -114,6 +115,8 @@ class GBS_Vouchers_Extension {
 
 	public function maybe_send_notification( $voucher_id, $set_current_time = 0 ) {
 		
+		error_log( "voucher id maybe: " . print_r( $voucher_id, true ) );
+
 		// Check if final notification was sent, if so we don't want to send any others.
 		if ( self::was_notification_sent( $voucher_id, self::NOTIFICATION_TYPE_FINAL ) )
 			return FALSE;
@@ -124,6 +127,7 @@ class GBS_Vouchers_Extension {
 		// Attempt to send the final notification first, since it's of higher priority and we don't want to send
 		// the 1/3 day notifications immediately before this one in case the customer just purchased before the deal closure.
 		if ( $deal->is_closed() ) {
+			error_log( "closed notification sent: " . print_r( TRUE, true ) );
 			self::voucher_notification( self::NOTIFICATION_TYPE_FINAL, $voucher );
 			return TRUE;
 		}
@@ -134,12 +138,14 @@ class GBS_Vouchers_Extension {
 
 		// If the voucher is older than 3 days we can assume the 1 day voucher notification was already sent.
 		if ( $voucher_date <= ( $set_current_time - 259200 ) ) { // If older than three days
+			error_log( "3day sent: " . print_r( TRUE, true ) );
 			self::voucher_notification( self::NOTIFICATION_TYPE_3DAY, $voucher );
 			return TRUE;
 		}
 
 		// If we got this far no notifications have been sent at all.
 		if ( $voucher_date <= ( $set_current_time - 86400 ) ) { // If older than one day
+			error_log( "1day sent: " . print_r( TRUE, true ) );
 			self::voucher_notification( self::NOTIFICATION_TYPE, $voucher );
 			return TRUE;
 		}
@@ -185,7 +191,7 @@ class GBS_Vouchers_Extension {
 	
 	public function filter_where( $where = '' ) {
 		// posts 1+ old
-		$where .= " AND post_date <= '" . date('Y-m-d', strtotime('-1 day')) . "'";
+		$where .= " AND post_date <= '" . date('Y-m-d', current_time('timestamp')-86400 ) . "'";
 		return $where;
 	}
 
