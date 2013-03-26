@@ -356,7 +356,7 @@ class GBS_VoucherExpiry_Addon_Adv extends Group_Buying_Controller {
 		add_action( 'admin_footer',  array( get_class(), 'admin_css' ) );
 
 		//Set new Expiration date on GBS Voucher (or display the existing date)
-		add_filter( 'gb_get_voucher_expiration_date',  array( get_class(), 'voucher_expiration_date' ), 10, 1 );
+		add_filter( 'gb_get_voucher_expiration_date',  array( get_class(), 'voucher_expiration_date' ), 10, 2 );
 
 		//Check if the voucher page is expired
 		add_action( 'template_redirect',  array( get_class(), 'check_voucher_expiration' ), 999, 1 );
@@ -421,6 +421,10 @@ class GBS_VoucherExpiry_Addon_Adv extends Group_Buying_Controller {
 		}
 		if ( !$voucher_id )
 			return '';
+
+		if ( get_post_status( $voucher_id ) != 'publish' ) {
+			return 0;
+		}
 
 		$voucher_date = get_the_time( 'U', $voucher_id );
 		$new_date = $voucher_date + ( self::$exp * 86400 );
