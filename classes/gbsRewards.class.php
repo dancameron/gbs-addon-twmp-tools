@@ -159,6 +159,7 @@ class GB_Affiliates_Ext {
 
 		// Loop through all the vouchers associated with the payment and tally up the credits that apply.
 		$credit = 0;
+		$vouchers_active = TRUE;
 		$vouchers = Group_Buying_Post_Type::find_by_meta( Group_Buying_Voucher::POST_TYPE, array( '_purchase_id' => $purchase_id ) );
 		foreach ( $vouchers as $voucher_id ) {
 			$voucher = Group_Buying_Voucher::get_instance( $voucher_id );
@@ -176,13 +177,16 @@ class GB_Affiliates_Ext {
 				}
 			} 
 			else {
-				return -1; // don't allow for this check again since a voucher not activated after 14 days is not good.
+				$vouchers_active = FALSE;
 			}
+		}
+		if ( !$credit && !$vouchers_active ) { // If there are no credits to apply and the vouchers are not active
+			return -1; // don't allow for this check again since a voucher not activated after 14 days is not good.
 		}
 		if ( GBS_DEV ) error_log( "credit to apply back: " . print_r( $credit, true ) );
 		// If we have credits apply them, fire an action and send the notification
 		if ( $credit ) {
-			$affiliate_account->add_credit( $credit, $credit_type );
+			$affiliate_account->add_credit( floor($credit), $credit_type );
 			do_action( 'gb_apply_credits_with_reg_restriction', $affiliate_account, $payment, $credit, $credit_type );
 			// Fire off the notification manually
 			Group_Buying_Notifications::applied_credits( $affiliate_account, $payment, $credit, $credit_type );
