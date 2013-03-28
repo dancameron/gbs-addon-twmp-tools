@@ -310,6 +310,11 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 
 		// add_action( 'init', array( get_class(), 'find_delayed_credits' ) ); // TODO switch
 		add_action( 'gb_cron', array( get_class(), 'find_delayed_credits' ) );
+
+		// Merchant Options
+		add_filter( 'gb_deal_submission_fields', array( get_class(), 'filter_deal_submission_fields' ), 10, 1 );
+		add_action( 'submit_deal',  array( get_class(), 'submit_deal' ), 10, 1 );
+		add_action( 'edit_deal',  array( get_class(), 'submit_deal' ), 10, 1 );
 	}
 
 	/**
@@ -497,6 +502,42 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 		Group_Buying_Records::new_record( self::__( 'Purchase Reward' ), Group_Buying_Accounts::$record_type, self::__( 'Purchase Reward' ), 1, $account_id, $data );
 	}
 
+	/**
+	 * Filter the merchant submission page
+	 *
+	 * @param array   $fields
+	 * @return array
+	 */
+	public function filter_deal_submission_fields( $fields ) {
+		global $wp; // get_query_var won't work at this point
+		$default = '';
+		if ( isset( $wp->query_vars[Group_Buying_Deals_Edit::EDIT_DEAL_QUERY_VAR] ) ) {
+			$deal_id = $wp->query_vars[Group_Buying_Deals_Edit::EDIT_DEAL_QUERY_VAR];
+			$deal = Group_Buying_Deal::get_instance( $deal_id );
+			$default = self::get_reward( $deal );
+		}
+		$fields['cb_rewards'] = array(
+			'label' => gb__( 'Rewards' ),
+			'weight' => 17,
+			'type' => 'text',
+			'default' => $default,
+			'required' => FALSE,
+			'description' => gb__( 'How many credits should the purchaser get.' )
+		);
+		return $fields;
+	}
+
+	/**
+	 * Save the credit field after the submission
+	 *
+	 * @param Group_Buying_Deal $deal
+	 * @return
+	 */
+	public function submit_deal( Group_Buying_Deal $deal ) {
+		$reward = isset( $_POST['gb_deal_cb_rewards'] ) ? $_POST['gb_deal_cb_rewards'] : '';
+		self::set_reward( $deal, $reward );
+	}
+
 	public static function add_meta_boxes() {
 		add_meta_box( 'purchase_rewards', self::__( 'Purchase Rewards' ), array( get_class(), 'show_meta_boxes' ), Group_Buying_Deal::POST_TYPE, 'side' );
 	}
@@ -515,8 +556,11 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 
 	private static function show_meta_box( Group_Buying_Deal $deal, $post, $metabox ) {
 		$reward = self::get_reward( $deal );
-		$qty_option = self::get_reward_qty_option( $deal );
-		include 'views/meta-box.php';
+		?>
+			<p>
+				<label for="purchase_reward"><?php gb_e('Purchase Reward:') ?> </label><input type="text" value="<?php echo $reward; ?>" name="purchase_reward" id="purchase_reward" placeholder="0" />
+			</p>
+		<?php 
 	}
 
 	public static function save_meta_boxes( $post_id, $post ) {
