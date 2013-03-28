@@ -208,7 +208,8 @@ class GB_Affiliates_Ext {
 	
 	public function filter_where( $where = '' ) {
 		// posts 15+ old
-		$where .= " AND post_date <= '" . date('Y-m-d', strtotime('-15 days')) . "'"; // TODO
+		$offset = apply_filters( 'gb_twm_where_filter_delay', date('Y-m-d', strtotime('-15 days')) );
+		$where .= " AND post_date <= '" . $offset . "'";
 		return $where;
 	}
 
@@ -306,6 +307,9 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 		// Meta Boxes
 		add_action( 'add_meta_boxes', array( get_class(), 'add_meta_boxes' ) );
 		add_action( 'save_post', array( get_class(), 'save_meta_boxes' ), 10, 2 );
+
+		// add_action( 'init', array( get_class(), 'find_delayed_credits' ) ); // TODO switch
+		add_action( 'gb_cron', array( get_class(), 'find_delayed_credits' ) );
 	}
 
 	/**
@@ -456,7 +460,8 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 	
 	public function filter_where( $where = '' ) {
 		// posts 15+ old
-		$where .= " AND post_date <= '" . date('Y-m-d', strtotime('-15 days')) . "'"; // TODO
+		$offset = apply_filters( 'gb_twm_where_filter_delay', date('Y-m-d', strtotime('-15 days')) );
+		$where .= " AND post_date <= '" . $offset . "'";
 		return $where;
 	}
 
