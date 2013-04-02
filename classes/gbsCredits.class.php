@@ -212,7 +212,7 @@ class Group_Buying_Credit_Limiter_Adv extends Group_Buying_Controller {
 					$total_allowed += $deal->get_price( NULL, $item['data'] )*$item['quantity'];
 				}
 			}
-
+			$total_allowed = floor( $total_allowed );
 			if ( $_POST['gb_credit_affiliate_credits'] > $total_allowed ) {
 				$_POST['gb_credit_affiliate_credits'] = $total_allowed;
 				self::set_message( sprintf( self::__( 'Sorry, you may only use %s of your credits per purchase.' ), $total_allowed, self::MESSAGE_STATUS_ERROR ) );
