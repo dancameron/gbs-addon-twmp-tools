@@ -530,7 +530,7 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 			'payment' => $payment,
 			'type' => $type
 		);
-		if ( GBS_DEV ) error_log( "data: " . print_r( $data, true ) );
+		if ( GBS_DEV ) error_log( "notification data: " . print_r( $data, true ) );
 		Group_Buying_Notifications::send_notification( self::NOTIFICATION_TYPE, $data, $to );
 	}
 	
