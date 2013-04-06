@@ -483,10 +483,9 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 			$purchase = Group_Buying_Purchase::get_instance( $purchase_id );
 			if ( GBS_DEV ) error_log( "purchase used credits: " . print_r( self::purchase_used_credits( $purchase ), true ) );
 			// Check if the purchase used rewards
-			if ( self::purchase_used_credits( $purchase ) != FALSE ) {
+			if ( $credits_used = self::purchase_used_credits( $purchase ) ) {
 				if ( GBS_DEV ) error_log( "purchase did have credits: " . print_r( $credits_used, true ) );
 				
-				$credits_used = self::purchase_used_credits( $purchase );
 				$purchase_total = $purchase->get_total();
 				$subtotal = $purchase_total-$credits_used;
 				$percentage = $subtotal/$purchase_total;
