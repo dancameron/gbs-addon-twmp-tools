@@ -465,7 +465,7 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 				$deal = Group_Buying_Deal::get_instance( $deal_id );
 				$reward_option = self::get_reward($deal);
 				// qty does not need to be considered since every voucher is looped.
-				if ( $reward >= 0.01 ) {
+				if ( $reward_option >= 0.01 ) {
 					$reward += $reward_option;
 				}
 			}
