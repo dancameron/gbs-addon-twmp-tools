@@ -199,6 +199,7 @@ class GB_Affiliates_Ext {
 			}
 		}
 		if ( !$credit && !$vouchers_active ) { // If there are no credits to apply and the vouchers are not active
+			error_log( "++++++++++++++++++ Vouchers not activated no sharing applied and the record is deleted +++++++++++++++++++++++++++++++: " . print_r( TRUE, true ) );
 			return -1; // don't allow for this check again since a voucher not activated after 14 days is not good.
 		}
 		if ( GBS_DEV ) error_log( "credit to apply back: " . print_r( $credit, true ) );
