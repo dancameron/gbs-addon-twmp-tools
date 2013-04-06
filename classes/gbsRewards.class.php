@@ -204,8 +204,9 @@ class GB_Affiliates_Ext {
 		if ( GBS_DEV ) error_log( "credit to apply back: " . print_r( $credit, true ) );
 		// If we have credits apply them, fire an action and send the notification
 		if ( $credit ) {
-			$affiliate_account->add_credit( floor($credit), $credit_type );
+			$credit = floor($credit);
 			if ( GBS_DEV ) error_log( "to apply: " . print_r( $credit, true ) );
+			$affiliate_account->add_credit( $credit, $credit_type );
 			do_action( 'gb_apply_credits_with_reg_restriction', $affiliate_account, $payment, $credit, $credit_type );
 			// Fire off the notification manually
 			Group_Buying_Notifications::applied_credits( $affiliate_account, $payment, $credit, $credit_type );
@@ -491,14 +492,15 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 				if ( GBS_DEV ) error_log( "percentage: " . print_r( $reward, true ) );
 			}
 
-			$account->add_credit( floor($reward), $credit_type ); // Round down
-			do_action( 'gb_apply_credits_with_reg_restriction', $account, $payment, $credit, $credit_type );
+			$reward = floor($reward);
+			$account->add_credit( $reward, $credit_type ); // Round down
+			do_action( 'gb_apply_credits_with_reg_restriction', $account, $payment, $reward, $credit_type );
 			// Fire off the notification manually
 			Group_Buying_Notifications::applied_credits( $account, $payment, $credit, $credit_type );
 			// Record reward
 			self::reward_applied_record( $account, $payment->get_ID(), $reward, $credit_type );
 		}
-		return $credit;
+		return $reward;
 		
 	}
 
