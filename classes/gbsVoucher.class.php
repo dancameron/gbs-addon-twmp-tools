@@ -155,7 +155,6 @@ class GBS_Vouchers_Extension {
 
 		$purchase = $voucher->get_purchase();
 		$deal = $voucher->get_deal();
-
 		$user_id = $purchase->get_user();
 		if ( $user_id !== -1 ) { // purchase will be set to -1 if it's a gift.
 			$recipient = Group_Buying_Notifications::get_user_email( $user_id );
