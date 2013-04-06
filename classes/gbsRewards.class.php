@@ -145,6 +145,7 @@ class GB_Affiliates_Ext {
 		$records = new WP_Query($args);
 		$record_ids = $records->posts;
 		remove_filter( 'posts_where', array( get_class(), 'filter_where' ) ); // Remove filter
+		if ( GBS_DEV ) error_log( "returned records delayed credits: " . print_r( $record_ids, true ) );
 
 		if ( empty( $record_ids ) )
 			return;
@@ -152,7 +153,9 @@ class GB_Affiliates_Ext {
 		// Loop through all the records and attempt to apply credits, or delete.
 		foreach ( $record_ids as $record_id ) {
 			$record = Group_Buying_Record::get_instance( $record_id );
+			if ( GBS_DEV ) error_log( "credit +++++++ record: " . print_r( $record_id, true ) );
 			$data = $record->get_data();
+			if ( GBS_DEV ) error_log( "record data: " . print_r( $data, true ) );
 			$affiliate_account = Group_Buying_Account::get_instance_by_id( $data['account_id'] );
 			$payment = Group_Buying_Payment::get_instance( $data['payment_id'] );
 			$applied = self::maybe_apply_credit( $affiliate_account, $payment, $data['credits'], $data['credit_type'], $data['current_time'] );
@@ -197,6 +200,7 @@ class GB_Affiliates_Ext {
 		// If we have credits apply them, fire an action and send the notification
 		if ( $credit ) {
 			$affiliate_account->add_credit( floor($credit), $credit_type );
+			if ( GBS_DEV ) error_log( "to apply: " . print_r( $credit, true ) );
 			do_action( 'gb_apply_credits_with_reg_restriction', $affiliate_account, $payment, $credit, $credit_type );
 			// Fire off the notification manually
 			Group_Buying_Notifications::applied_credits( $affiliate_account, $payment, $credit, $credit_type );
