@@ -317,6 +317,7 @@ class GB_Affiliates_Ext {
 
 class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 	const RECORD_TYPE = 'delayed_rewards';
+	const NOTIFICATION_TYPE = 'purchase_rewarded_notification';
 	private static $credit_type;
 
 	private static $meta_keys = array(
@@ -342,6 +343,9 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 		add_filter( 'gb_deal_submission_fields', array( get_class(), 'filter_deal_submission_fields' ), 10, 1 );
 		add_action( 'submit_deal',  array( get_class(), 'submit_deal' ), 10, 1 );
 		add_action( 'edit_deal',  array( get_class(), 'submit_deal' ), 10, 1 );
+
+		// notification
+		add_filter( 'gb_notification_types', array( get_class(), 'register_notification_type' ), 10, 1 );
 	}
 
 	/**
@@ -496,7 +500,7 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 			$account->add_credit( $reward, $credit_type ); // Round down
 			do_action( 'gb_apply_credits_with_reg_restriction', $account, $payment, $reward, $credit_type );
 			// Fire off the notification manually
-			Group_Buying_Notifications::applied_credits( $account, $payment, $credit, $credit_type );
+			self::send_notification( $account, $payment, $reward, $credit_type );
 			// Record reward
 			self::reward_applied_record( $account, $payment->get_ID(), $reward, $credit_type );
 		}
@@ -583,6 +587,18 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 			'description' => gb__( 'How many credits should the purchaser get.' )
 		);
 		return $fields;
+	}
+
+	public function register_notification_type( $notifications ) {
+		$notifications[self::NOTIFICATION_TYPE] = array(
+			'name' => gb__( 'Purchase Rewarded' ),
+			'description' => gb__( "Customize the notification sent to the customer after a purchase reward is added to their account." ),
+			'shortcodes' => array( 'date', 'name', 'username', 'site_title', 'site_url', 'reward' ),
+			'default_title' => gb__( 'Purchase Reward' . get_bloginfo( 'name' ) ),
+			'default_content' => sprintf( 'You have received a purchase reward at %s.', get_bloginfo( 'name' ) ),
+			'allow_preference' => TRUE
+		);
+		return $notifications;
 	}
 
 	/**
