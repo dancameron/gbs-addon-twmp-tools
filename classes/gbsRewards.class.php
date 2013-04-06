@@ -209,9 +209,27 @@ class GB_Affiliates_Ext {
 			do_action( 'gb_apply_credits_with_reg_restriction', $affiliate_account, $payment, $credit, $credit_type );
 			// Fire off the notification manually
 			Group_Buying_Notifications::applied_credits( $affiliate_account, $payment, $credit, $credit_type );
+			// Record reward
+			self::affiliate_record( $affiliate_account, $purchaser_account, $payment->get_ID(), $credit, $credit_type, $set_current_time);
 		}
 		return $credit;
 		
+	}
+
+	// TODO move this to records controller
+	public static function affiliate_record( $account, $purchaser_account, $payment_id, $credits, $type, $set_current_time ) {
+		$account_id = $account->get_ID();
+		$purchaser_id = $purchaser_account->get_ID();
+		$purchaser_name = $purchaser_account->get_name();
+		$balance = $account->get_credit_balance( $type );
+		$data = array();
+		$data['account_id'] = $account_id;
+		$data['payment_id'] = $payment_id;
+		$data['credits'] = $credits;
+		$data['type'] = $type;
+		$data['current_total_'.$type] = $balance;
+		$data['change_'.$type] = $credits;
+		Group_Buying_Records::new_record( sprintf( gb__( '%s Points from %s (#%s) - Delayed from %s.' ), ucfirst( $type ), $purchaser_name, $purchaser_id, date( get_option( 'date_format' ).' @ '.get_option( 'time_format' ), $set_current_time ) ), $type, sprintf( gb__( '%s Points from %s (#%s) - Delayed from %s.' ), ucfirst( $type ), $purchaser_name, $purchaser_id, date( get_option( 'date_format' ).' @ '.get_option( 'time_format' ), $set_current_time ) ), 1, $account_id, $data );
 	}
 	
 	public function filter_where( $where = '' ) {
@@ -477,9 +495,38 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 			do_action( 'gb_apply_credits_with_reg_restriction', $account, $payment, $credit, $credit_type );
 			// Fire off the notification manually
 			Group_Buying_Notifications::applied_credits( $account, $payment, $credit, $credit_type );
+			// Record reward
+			self::reward_applied_record( $account, $payment->get_ID(), $reward, $credit_type );
 		}
 		return $credit;
 		
+	}
+
+	public static function reward_applied_record( $account, $payment_id, $credits, $type ) {
+		$account_id = $account->get_ID();
+		$balance = $account->get_credit_balance( $type );
+		$data = array();
+		$data['account_id'] = $account_id;
+		$data['payment_id'] = $payment_id;
+		$data['credits'] = $credits;
+		$data['type'] = $type;
+		$data['current_total_'.$type] = $balance;
+		$data['change_'.$type] = $credits;
+		if ( GBS_DEV ) error_log( "data: " . print_r( $data, true ) );
+		Group_Buying_Records::new_record( sprintf( gb__( 'Purchase Reward from Payment #%s' ), $payment_id ), $type, sprintf( gb__( 'Purchase Reward from Payment #%s' ), $payment_id ), 1, $account_id, $data );
+	}
+
+	public function send_notification( $account, $payment, $credits, $type ) {
+		$user_id = $account->get_user_id();
+		$to = Group_Buying_Notifications::get_user_email( $user_id );
+		$data = array(
+			'user_id' => $user_id,
+			'applied_credits' => $credits,
+			'payment' => $payment,
+			'type' => $type
+		);
+		if ( GBS_DEV ) error_log( "data: " . print_r( $data, true ) );
+		Group_Buying_Notifications::send_notification( self::NOTIFICATION_TYPE, $data, $to );
 	}
 	
 	public function filter_where( $where = '' ) {
@@ -509,19 +556,6 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 		}
 		if ( GBS_DEV ) error_log( "purchase used credits: " . print_r( $credits_used, true ) );
 		return $credits_used;
-	}
-
-	public static function reward_record( $account, $payment_id, $credits, $type ) {
-		$account_id = $account->get_ID();
-		$balance = $account->get_credit_balance( $type );
-		$data = array();
-		$data['account_id'] = $account_id;
-		$data['payment_id'] = $payment_id;
-		$data['credits'] = $credits;
-		$data['type'] = $type;
-		$data['current_total_'.$type] = $balance;
-		$data['change_'.$type] = $credits;
-		Group_Buying_Records::new_record( self::__( 'Purchase Reward' ), Group_Buying_Accounts::$record_type, self::__( 'Purchase Reward' ), 1, $account_id, $data );
 	}
 
 	/**
