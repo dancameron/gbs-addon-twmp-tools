@@ -158,11 +158,16 @@ class GB_Affiliates_Ext {
 			if ( GBS_DEV ) error_log( "record data: " . print_r( $data, true ) );
 			$affiliate_account = Group_Buying_Account::get_instance_by_id( $data['account_id'] );
 			$payment = Group_Buying_Payment::get_instance( $data['payment_id'] );
+			if ( !is_a( $payment, 'Group_Buying_Payment' ) ) {
+				wp_delete_post( $record_id, TRUE );
+				return;
+			}
 			$applied = self::maybe_apply_credit( $affiliate_account, $payment, $data['credits'], $data['credit_type'], $data['current_time'] );
 			if ( GBS_DEV ) error_log( "applied: " . print_r( $applied, true ) );
 			if ( $applied < 0 || $applied > 0 ) { // If applied remove the record, -1 is given if the record should not be checked again.
 				wp_delete_post( $record_id, TRUE );
 			}
+			return;
 		}
 	}
 
@@ -408,6 +413,10 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 			if ( GBS_DEV ) error_log( "data: " . print_r( $data, true ) );
 			$account = Group_Buying_Account::get_instance_by_id( $data['account_id'] );
 			$payment = Group_Buying_Payment::get_instance( $data['payment_id'] );
+			if ( !is_a( $payment, 'Group_Buying_Payment' ) ) {
+				wp_delete_post( $record_id, TRUE );
+				return;
+			}
 			$applied = self::maybe_apply_reward( $account, $payment, $data['credit_type'], $data['current_time'] );
 			if ( GBS_DEV ) error_log( "applied: " . print_r( $applied, true ) );
 			if ( $applied < 0 || $applied > 0 ) { // If applied remove the record, -1 is given if the record should not be checked again.
