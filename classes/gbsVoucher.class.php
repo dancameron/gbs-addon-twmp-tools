@@ -53,6 +53,7 @@ class GBS_Vouchers_Extension {
 		// Find notification to be sent
 		add_action( 'init', array( get_class(), 'find_pending_vouchers' ) );
 		// add_action( 'gb_cron', array( get_class(), 'find_pending_vouchers' ) );
+		add_action( 'payment_pending', array( get_class(), 'maybe_send_final_notification' ) );
 
 		// Register Notifications
 		add_filter( 'gb_notification_types', array( get_class(), 'register_notification_type' ), 10, 1 );
@@ -64,25 +65,6 @@ class GBS_Vouchers_Extension {
 		add_filter( 'set_merchant_voucher_report_data_records', array( get_class(), 'set_voucher_report_data_records' ), 10, 1 );
 		add_action( 'wp_ajax_gb_merchant_toggle_voucher_status',  array( get_class(), 'toggle_status' ), 10, 0 );
 		add_action( 'wp_footer', array( get_class(), 'print_js' ) );
-	}
-
-	public function find_pending_vouchers() {
-
-		// Filter the post query so that it returns only pending vouchers a day+ old
-		add_filter( 'posts_where', array( get_class(), 'filter_where' ) );
-		$args = array(
-				'post_type' => Group_Buying_Voucher::POST_TYPE,
-				'post_status' => 'pending',
-				'posts_per_page' => -1,
-				'fields' => 'ids',
-				'gb_bypass_filter' => TRUE );
-		$vouchers = new WP_Query($args);
-		remove_filter( 'posts_where', array( get_class(), 'filter_where' ) );
-
-		foreach ( $vouchers->posts as $voucher_id ) {
-			self::maybe_send_notification( $voucher_id );
-		}
-		
 	}
 
 	public function register_notification_type( $notifications ) {
@@ -111,6 +93,42 @@ class GBS_Vouchers_Extension {
 			'allow_preference' => TRUE
 		);
 		return $notifications;
+	}
+
+	public function find_pending_vouchers() {
+
+		// Filter the post query so that it returns only pending vouchers a day+ old
+		add_filter( 'posts_where', array( get_class(), 'filter_where' ) );
+		$args = array(
+				'post_type' => Group_Buying_Voucher::POST_TYPE,
+				'post_status' => 'pending',
+				'posts_per_page' => -1,
+				'fields' => 'ids',
+				'gb_bypass_filter' => TRUE );
+		$vouchers = new WP_Query($args);
+		remove_filter( 'posts_where', array( get_class(), 'filter_where' ) );
+
+		foreach ( $vouchers->posts as $voucher_id ) {
+			self::maybe_send_notification( $voucher_id );
+		}
+		
+	}
+
+	public function maybe_send_final_notification( Group_Buying_Payment $payment ) {
+		if ( $payment->get_payment_method() == Group_Buying_Offsite_Manual_Purchasing_Custom::get_payment_method() ) {
+			$purchase_id = $payment->get_purchase();
+			$purchase = Group_Buying_Purchase::get_instance( $purchase_id );
+			$products = $purchase->get_products();
+			foreach ( $products as $product ) {
+				$deal = Group_Buying_Deal::get_instance( $product['deal_id'] );
+				if ( $deal->is_successful() ) {
+					$vouchers = Group_Buying_Voucher::get_pending_vouchers( $product['deal_id'], $purchase_id ); // Added purchase id 4.3.x so that only this purchase vouchers are returned.
+					foreach ( $vouchers as $voucher_id ) {
+						self::maybe_send_notification( $voucher_id );
+					}
+				}
+			}
+		}
 	}
 
 	public function maybe_send_notification( $voucher_id, $set_current_time = 0 ) {
