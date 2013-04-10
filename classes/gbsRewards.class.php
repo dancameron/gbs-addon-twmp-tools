@@ -359,6 +359,16 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 	 * @return void
 	 */
 	public static function delay_apply_rewards( Group_Buying_Payment $payment ) {
+
+		// Rewards are not provided to payments with credits applied. This will also prevent duplicate records
+		// since purchases will not consist of two payment processors without credits being the second.
+		$payment_method = $payment->get_payment_method();
+		if ( GBS_DEV ) error_log( "delay_apply_rewards - payment method: " . print_r( $payment_method, true ) );
+		if ( $payment_method == Group_Buying_Account_Balance_Payments::PAYMENT_METHOD || $payment_method == Group_Buying_Affiliate_Credit_Payments::PAYMENT_METHOD ) {
+			if ( GBS_DEV ) error_log( "credit payment don't apply rewards: " . print_r( TRUE, true ) );
+			return;
+		}
+
 		$account = $payment->get_account();
 		$purchase_id = $payment->get_purchase();
 		$purchase = Group_Buying_Purchase::get_instance( $purchase_id );
@@ -483,7 +493,7 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 		if ( $reward ) {
 			
 			$purchase = Group_Buying_Purchase::get_instance( $purchase_id );
-			if ( GBS_DEV ) error_log( "purchase used credits: " . print_r( self::purchase_used_credits( $purchase ), true ) );
+			
 			// Check if the purchase used rewards
 			if ( $credits_used = self::purchase_used_credits( $purchase ) ) {
 				if ( GBS_DEV ) error_log( "purchase did have credits: " . print_r( $credits_used, true ) );
@@ -511,7 +521,7 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 
 	public static function reward_applied_record( $account, $payment_id, $credits, $type ) {
 		$account_id = $account->get_ID();
-		$balance = $account->get_credit_balance( $type );
+		$balance = $account->get_credit_balancereward_applied_record( $type );
 		$data = array();
 		$data['account_id'] = $account_id;
 		$data['payment_id'] = $payment_id;
