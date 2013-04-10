@@ -53,7 +53,7 @@ class GBS_Vouchers_Extension {
 		// Find notification to be sent
 		add_action( 'init', array( get_class(), 'find_pending_vouchers' ) );
 		// add_action( 'gb_cron', array( get_class(), 'find_pending_vouchers' ) );
-		add_action( 'payment_pending', array( get_class(), 'maybe_send_final_notification' ) );
+		add_action( 'offsite_payment_pending', array( get_class(), 'maybe_send_final_notification' ), 10, 1 );
 
 		// Register Notifications
 		add_filter( 'gb_notification_types', array( get_class(), 'register_notification_type' ), 10, 1 );
@@ -115,27 +115,32 @@ class GBS_Vouchers_Extension {
 	}
 
 	public function maybe_send_final_notification( Group_Buying_Payment $payment ) {
-		if ( $payment->get_payment_method() == Group_Buying_Offsite_Manual_Purchasing_Custom::get_payment_method() ) {
-			$purchase_id = $payment->get_purchase();
-			$purchase = Group_Buying_Purchase::get_instance( $purchase_id );
-			$products = $purchase->get_products();
-			foreach ( $products as $product ) {
-				$deal = Group_Buying_Deal::get_instance( $product['deal_id'] );
-				if ( $deal->is_successful() ) {
-					$vouchers = Group_Buying_Voucher::get_pending_vouchers( $product['deal_id'], $purchase_id ); // Added purchase id 4.3.x so that only this purchase vouchers are returned.
-					foreach ( $vouchers as $voucher_id ) {
-						self::maybe_send_notification( $voucher_id );
-					}
+		if ( GBS_DEV ) error_log( "maybe send notification after offsite purchase: " . print_r( $payment, true ) );
+		$purchase_id = $payment->get_purchase();
+		$purchase = Group_Buying_Purchase::get_instance( $purchase_id );
+		$products = $purchase->get_products();
+		foreach ( $products as $product ) {
+			if ( GBS_DEV ) error_log( "products: " . print_r( $products, true ) );
+			$deal = Group_Buying_Deal::get_instance( $product['deal_id'] );
+			if ( $deal->is_successful() ) {
+				if ( GBS_DEV ) error_log( "deal is successful: " . print_r( $product['deal_id'], true ) );
+				$vouchers = Group_Buying_Voucher::get_pending_vouchers( $product['deal_id'], $purchase_id ); // Added purchase id 4.3.x so that only this purchase vouchers are returned.
+				if ( GBS_DEV ) error_log( "vouchers to loop: " . print_r( $vouchers, true ) );
+				foreach ( $vouchers as $voucher_id ) {
+					self::maybe_send_notification( $voucher_id );
 				}
 			}
 		}
 	}
 
 	public function maybe_send_notification( $voucher_id, $set_current_time = 0 ) {
-		
+		if ( GBS_DEV ) error_log( "maybe send voucher notification: " . print_r( $voucher_id, true ) );
 		// Check if final notification was sent, if so we don't want to send any others.
 		if ( self::was_notification_sent( $voucher_id, self::NOTIFICATION_TYPE_FINAL ) )
 			return FALSE;
+
+
+		if ( GBS_DEV ) error_log( "final not sent yet: " . print_r( $voucher_id, true ) );
 
 		$voucher = Group_Buying_Voucher::get_instance( $voucher_id );
 		$deal = $voucher->get_deal();
@@ -143,6 +148,7 @@ class GBS_Vouchers_Extension {
 		// Attempt to send the final notification first, since it's of higher priority and we don't want to send
 		// the 1/3 day notifications immediately before this one in case the customer just purchased before the deal closure.
 		if ( $deal->is_closed() ) {
+			if ( GBS_DEV ) error_log( "check if final notification can be sent: " . print_r( $deal->get_id(), true ) );
 			self::voucher_notification( self::NOTIFICATION_TYPE_FINAL, $voucher );
 			return TRUE;
 		}

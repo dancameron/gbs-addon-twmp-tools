@@ -331,6 +331,7 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 
 		// Hook into purchases and provide credits based on deal
 		add_action( 'payment_complete', array( get_class(), 'delay_apply_rewards' ), 10, 1 ); // Do the dirty work
+		add_action( 'offsite_payment_pending', array( get_class(), 'delay_apply_rewards' ), 10, 1 ); // Allow for offsite payments, since they're always pending.
 
 
 		// Meta Boxes

@@ -77,6 +77,7 @@ class Group_Buying_Offsite_Manual_Purchasing_Custom extends Group_Buying_Offsite
 		}
 		$payment = Group_Buying_Payment::get_instance( $payment_id );
 		do_action( 'payment_pending', $payment );
+		do_action( 'offsite_payment_pending', $payment );
 		// apply credits since offsite payments are never marked complete
 		Group_Buying_Affiliates::apply_credits( $payment );
 		return $payment;
