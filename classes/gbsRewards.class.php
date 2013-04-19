@@ -383,6 +383,7 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 				$possible_rewards = TRUE;
 			}
 		}
+		if ( GBS_DEV ) error_log( "possible_rewards: " . print_r( $reward, true ) );
 
 		if ( !$possible_rewards ) { // If the purchase doesn't have any rewards stop before creating records
 			return;
@@ -533,7 +534,7 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 		Group_Buying_Records::new_record( sprintf( gb__( 'Purchase Reward from Payment #%s' ), $payment_id ), $type, sprintf( gb__( 'Purchase Reward from Payment #%s' ), $payment_id ), 1, $account_id, $data );
 	}
 
-	public function send_notification( $account, $payment, $credits, $type ) {
+	public function send_notification( Group_Buying_Account $account, $payment, $credits, $type ) {
 		$user_id = $account->get_user_id();
 		$to = Group_Buying_Notifications::get_user_email( $user_id );
 		$data = array(
