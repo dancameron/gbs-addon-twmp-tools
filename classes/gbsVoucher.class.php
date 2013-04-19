@@ -147,6 +147,10 @@ class GBS_Vouchers_Extension {
 		$voucher = Group_Buying_Voucher::get_instance( $voucher_id );
 		$deal = $voucher->get_deal();
 
+		if ( !is_a( $deal, 'Group_Buying_Deal' ) ) {
+			return FALSE;
+		}
+		
 		// Attempt to send the final notification first, since it's of higher priority and we don't want to send
 		// the 1/3 day notifications immediately before this one in case the customer just purchased before the deal closure.
 		if ( $deal->is_closed() ) {
