@@ -11,7 +11,7 @@ class GBS_Credits_Extension {
 
 	public static function load_custom_addons( $addons ) {
 		$addons['credit_limiter'] = array( // same key so that it overrides the original in case it's already set.
-			'label' => __( 'Credit Limit (Advanced)' ),
+			'label' => __( 'TWM Tools: Credit Limit (Advanced)' ),
 			'description' => __( 'Add-on creates an option for limiting the number of credits a customer can use per _deal_.' ),
 			'files' => array(
 				__FILE__,

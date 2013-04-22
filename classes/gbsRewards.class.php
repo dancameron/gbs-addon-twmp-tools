@@ -15,7 +15,7 @@ class GB_Affiliates_Ext {
 
 	public static function load_custom_addons( $addons ) {
 		$addons['affiliate_credit_restrictions_merchant_edit'] = array(
-			'label' => __( 'Deal Based Rewards Modification (Merchants)' ),
+			'label' => __( 'TWM Tools: Deal Based Rewards Modification (Merchants)' ),
 			'description' => __( 'Allow for merchants to edit the credit field for each deal. This requires "Deal Based Rewards" add-on to be loaded/activated.' ),
 			'files' => array(
 				__FILE__,
@@ -26,7 +26,7 @@ class GB_Affiliates_Ext {
 			),
 		);
 		$addons['affiliate_credit_restrictions_percentage'] = array(
-			'label' => __( 'Deal Based Rewards Modification (Purchase Limits)' ),
+			'label' => __( 'TWM Tools: Deal Based Rewards Modification (Purchase Limits)' ),
 			'description' => __( 'If both money and credits are used for a purchase then cashback should be earned proportionally for the portion of the purchase that money was used. This requires "Deal Based Rewards" add-on to be loaded/activated.' ),
 			'files' => array(
 				__FILE__
@@ -36,7 +36,7 @@ class GB_Affiliates_Ext {
 			),
 		);
 		$addons['affiliate_credit_restrictions_delay'] = array(
-			'label' => __( 'Affiliate Credits Restrictions (14-day delay)' ),
+			'label' => __( 'TWM Tools: Affiliate Credits Restrictions (14-day delay)' ),
 			'description' => __( 'Delay all credits 15 days to verify if voucher is active. ' ),
 			'files' => array(
 				__FILE__,
@@ -47,7 +47,7 @@ class GB_Affiliates_Ext {
 			),
 		);
 		$addons['cashback_rewards'] = array(
-			'label' => gb__( 'Cashback Rewards (Advanced with 14-day delay)' ),
+			'label' => gb__( 'TWM Tools: Cashback Rewards (Advanced with 14-day delay)' ),
 			'description' => gb__( 'Set a cashback reward/credit per deal that’s given after purchase. Send notification when reward is applied to the account (Credits Rewarded Notification). If both money and credits are used for a purchase then reward should be earned proportionally for the portion of the purchase that money was used. Reward is not credited to user account until 14 days after purchase and the voucher is activated.' ),
 			'files' => array(
 				__FILE__,

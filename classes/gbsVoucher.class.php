@@ -16,7 +16,7 @@ class GBS_Vouchers_Extension {
 
 	public static function load_custom_addons( $addons ) {
 		$addons['voucherexpiry'] = array(
-			'label' => __( 'Adv. Voucher Expiry (Advanced)' ),
+			'label' => __( 'TWM Tools: Adv. Voucher Expiry (Advanced)' ),
 			'description' => __( 'Add option for Voucher Expiration by Days after Purchase. Disable access to vouchers after expiration.' ),
 			'files' => array(
 				__FILE__,
@@ -27,7 +27,7 @@ class GBS_Vouchers_Extension {
 			),
 		);
 		$addons['voucher_notifications_addon'] = array(
-			'label' => __( 'Send Notification Reminders to Purchasers' ),
+			'label' => __( 'TWM Tools: Send Notification Reminders to Purchasers' ),
 			'description' => __( 'Send a reminder to purchasers 1-day after purchase to remind them to pay; Send a notification to the purchaser if the voucher is not activated within 3-days; After the deal tips and the voucher has not been activated they must pay within the next day.' ),
 			'files' => array(
 				__FILE__,
@@ -37,7 +37,7 @@ class GBS_Vouchers_Extension {
 			),
 		);
 		$addons['voucher_merchant_activation'] = array(
-			'label' => __( 'Merchant Activation/Deactivation' ),
+			'label' => __( 'TWM Tools: Merchant Activation/Deactivation' ),
 			'description' => __( 'Allow for merchant to activate and deactivate vouchers from the vouchers report.' ),
 			'files' => array(
 				__FILE__,
