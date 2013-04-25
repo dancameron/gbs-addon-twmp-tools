@@ -51,8 +51,8 @@ class GBS_Vouchers_Extension {
 
 	public function voucher_notification_hooks() {
 		// Find notification to be sent
-		add_action( 'init', array( get_class(), 'find_pending_vouchers' ) );
-		// add_action( 'gb_cron', array( get_class(), 'find_pending_vouchers' ) );
+		//add_action( 'init', array( get_class(), 'find_pending_vouchers' ) );
+		add_action( 'gb_cron', array( get_class(), 'find_pending_vouchers' ) );
 		add_action( 'offsite_payment_pending', array( get_class(), 'maybe_send_final_notification' ), 10, 1 );
 
 		// Register Notifications
@@ -96,7 +96,9 @@ class GBS_Vouchers_Extension {
 	}
 
 	public function find_pending_vouchers() {
-
+		
+		usleep( rand(1000, 100000) ); // Sleep for a random second+ so this won't be executed in parallel.
+		
 		// Filter the post query so that it returns only pending vouchers a day+ old
 		add_filter( 'posts_where', array( get_class(), 'filter_where' ) );
 		$args = array(
