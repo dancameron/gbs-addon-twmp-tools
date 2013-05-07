@@ -253,7 +253,7 @@ class GB_Affiliates_Ext {
 		if ( isset( $wp->query_vars[Group_Buying_Deals_Edit::EDIT_DEAL_QUERY_VAR] ) ) {
 			$deal_id = $wp->query_vars[Group_Buying_Deals_Edit::EDIT_DEAL_QUERY_VAR];
 			$deal = Group_Buying_Deal::get_instance( $deal_id );
-			$default = Group_Buying_Deal_Reward::get_credits( $deal );
+			$default = ( Group_Buying_Deal_Reward::get_credits( $deal ) ) ? Group_Buying_Deal_Reward::get_credits( $deal ) : get_option( Group_Buying_Deal_Rewards::OPTION_CREDIT, 0 );
 		}
 		$fields['dbr_credit'] = array(
 			'label' => gb__( 'Credits' ),
