@@ -21,6 +21,11 @@ class Group_Buying_Offsite_Manual_Purchasing_Custom extends Group_Buying_Offsite
 		add_action( 'admin_init', array( $this, 'register_settings' ), 10, 0 );
 
 		add_filter( 'gb_checkout_payment_controls', array( $this, 'payment_controls' ), 20, 2 );
+
+		add_filter( 'set_merchant_purchase_report_column', array( $this, 'set_purchase_report_data_column' ), 10, 1 );
+		add_filter( 'set_merchant_purchase_report_records', array( $this, 'set_purchase_report_data_records' ), 10, 1 );
+		add_filter( 'set_merchant_voucher_report_data_column', array( $this, 'set_purchase_report_data_column' ), 10, 1 );
+		add_filter( 'set_merchant_voucher_report_data_records', array( $this, 'set_purchase_report_data_records' ), 10, 1 );	
 	}
 
 	public static function register() {
@@ -104,5 +109,33 @@ class Group_Buying_Offsite_Manual_Purchasing_Custom extends Group_Buying_Offsite
 			$controls['review'] = str_replace( 'value="'.self::__( 'Review' ).'"', $style . ' value="'.self::__( 'Offsite Purchase' ).'"', $controls['review'] );
 		}
 		return $controls;
+	}
+
+	/////////////
+	// Reports //
+	/////////////
+
+	public static function set_purchase_report_data_column( $columns ) {
+		$columns['payment_pending'] = gb__( 'Order Total Pending' );
+		return $columns;
+	}
+
+	public static function set_purchase_report_data_records( $array ) {
+		if ( !is_array( $array ) ) {
+			return; // nothing to do.
+		}
+		$new_array = array();
+		foreach ( $array as $records ) {
+			$total = 0;
+			$purchase = Group_Buying_Purchase::get_instance( $records['id']);
+			foreach ( $purchase->get_products() as $item  ) {
+				if ( isset( $item['payment_method'][self::__(self::PAYMENT_METHOD)] ) ) {
+					$total += $item['payment_method'][self::__(self::PAYMENT_METHOD)];
+				}
+			}
+			$pending = array( 'payment_pending' => gb_get_formatted_money( $total ) );
+			$new_array[] = array_merge( $records, $pending );
+		}
+		return $new_array;
 	}
 }
