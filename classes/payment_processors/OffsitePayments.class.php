@@ -22,10 +22,15 @@ class Group_Buying_Offsite_Manual_Purchasing_Custom extends Group_Buying_Offsite
 
 		add_filter( 'gb_checkout_payment_controls', array( $this, 'payment_controls' ), 20, 2 );
 
+		// Prevent vouchers from being activated if the payment is mixed with offsite payments.
+		remove_action( 'payment_captured', array( 'Group_Buying_Vouchers', 'activate_vouchers' ) );
+		add_action( 'payment_captured', array( get_class(), 'activate_vouchers' ), 10, 2 );
+
+		// Reports
 		add_filter( 'set_merchant_purchase_report_column', array( $this, 'set_purchase_report_data_column' ), 10, 1 );
 		add_filter( 'set_merchant_purchase_report_records', array( $this, 'set_purchase_report_data_records' ), 10, 1 );
 		add_filter( 'set_merchant_voucher_report_data_column', array( $this, 'set_purchase_report_data_column' ), 10, 1 );
-		add_filter( 'set_merchant_voucher_report_data_records', array( $this, 'set_purchase_report_data_records' ), 10, 1 );	
+		add_filter( 'set_merchant_voucher_report_data_records', array( $this, 'set_purchase_report_data_records' ), 10, 1 );
 	}
 
 	public static function register() {
@@ -109,6 +114,34 @@ class Group_Buying_Offsite_Manual_Purchasing_Custom extends Group_Buying_Offsite
 			$controls['review'] = str_replace( 'value="'.self::__( 'Review' ).'"', $style . ' value="'.self::__( 'Offsite Purchase' ).'"', $controls['review'] );
 		}
 		return $controls;
+	}
+
+	/**
+	 * Activate any pending vouchers if the purchased deal is now successful
+	 *
+	 * @static
+	 * @param Group_Buying_Purchase $purchase
+	 * @return void
+	 */
+	public static function activate_vouchers( Group_Buying_Payment $payment, $items_captured ) {
+		$purchase_id = $payment->get_purchase();
+		$purchase = Group_Buying_Purchase::get_instance( $purchase_id );
+		$products = $purchase->get_products();
+		foreach ( $products as $product ) {
+			if ( isset( $product['payment_method'][self::__(self::PAYMENT_METHOD)] ) ) { // Don't activate vouchers automatically
+				continue;
+			}
+			if ( in_array( $product['deal_id'], $items_captured ) ) {
+				$deal = Group_Buying_Deal::get_instance( $product['deal_id'] );
+				if ( $deal->is_successful() ) {
+					$vouchers = Group_Buying_Voucher::get_pending_vouchers( $product['deal_id'], $purchase_id ); // Added purchase id 4.3.x so that only the purchased vouchers are activated.
+					foreach ( $vouchers as $voucher_id ) {
+						$voucher = Group_Buying_Voucher::get_instance( $voucher_id );
+						$voucher->activate();
+					}
+				}
+			}
+		}
 	}
 
 	/////////////
