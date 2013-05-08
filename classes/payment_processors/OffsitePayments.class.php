@@ -25,12 +25,14 @@ class Group_Buying_Offsite_Manual_Purchasing_Custom extends Group_Buying_Offsite
 		// Prevent vouchers from being activated if the payment is mixed with offsite payments.
 		remove_action( 'payment_captured', array( 'Group_Buying_Vouchers', 'activate_vouchers' ) );
 		add_action( 'payment_captured', array( get_class(), 'activate_vouchers' ), 10, 2 );
+	}
 
+	public function reports() {
 		// Reports
-		add_filter( 'set_merchant_purchase_report_column', array( $this, 'set_purchase_report_data_column' ), 10, 1 );
-		add_filter( 'set_merchant_purchase_report_records', array( $this, 'set_purchase_report_data_records' ), 10, 1 );
-		add_filter( 'set_merchant_voucher_report_data_column', array( $this, 'set_purchase_report_data_column' ), 10, 1 );
-		add_filter( 'set_merchant_voucher_report_data_records', array( $this, 'set_purchase_report_data_records' ), 10, 1 );
+		add_filter( 'set_merchant_purchase_report_column', array( get_class(), 'set_purchase_report_data_column' ), 10, 1 );
+		add_filter( 'set_merchant_purchase_report_records', array( get_class(), 'set_purchase_report_data_records' ), 10, 1 );
+		add_filter( 'set_merchant_voucher_report_data_column', array( get_class(), 'set_purchase_report_data_column' ), 10, 1 );
+		add_filter( 'set_merchant_voucher_report_data_records', array( get_class(), 'set_purchase_report_data_records' ), 10, 1 );
 	}
 
 	public static function register() {
@@ -172,3 +174,4 @@ class Group_Buying_Offsite_Manual_Purchasing_Custom extends Group_Buying_Offsite
 		return $new_array;
 	}
 }
+Group_Buying_Offsite_Manual_Purchasing_Custom::reports();
