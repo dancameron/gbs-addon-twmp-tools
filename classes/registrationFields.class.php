@@ -33,7 +33,6 @@ class Registration_Fields extends Group_Buying_Controller {
 	const MOBILE = 'gb_account_mobile';
 
 	public static function init() {
-		error_log( "loaded: " . print_r( TRUE, true ) );
 		// registration hooks
 		add_filter('gb_account_registration_panes', array(get_class(), 'get_registration_panes'),100);
 		add_filter('gb_validate_account_registration', array(get_class(), 'validate_account_fields'), 10, 4);
