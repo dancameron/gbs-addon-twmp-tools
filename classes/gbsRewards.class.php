@@ -522,7 +522,7 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 
 	public static function reward_applied_record( $account, $payment_id, $credits, $type ) {
 		$account_id = $account->get_ID();
-		$balance = $account->get_credit_balancereward_applied_record( $type );
+		$balance = $account->get_credit_balance( $type );
 		$data = array();
 		$data['account_id'] = $account_id;
 		$data['payment_id'] = $payment_id;
