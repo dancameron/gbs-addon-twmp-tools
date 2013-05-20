@@ -253,6 +253,8 @@ class Registration_Fields extends Group_Buying_Controller {
 			$default_code = get_post_meta( $account->get_ID(), '_'.self::MOBILE_CODE, TRUE );
 			$default_number = get_post_meta( $account->get_ID(), '_'.self::MOBILE, TRUE );
 		}
+		$default_code = ( isset( $_REQUEST[self::MOBILE_CODE] ) ) ? $_REQUEST[self::MOBILE_CODE] : $default_code ;
+		$default_number = ( isset( $_REQUEST[self::MOBILE] ) ) ? $_REQUEST[self::MOBILE] : $default_number ;
 		$codes = array(
 			'Greece' => '+30',
 			'Cyprus' => '+357',
