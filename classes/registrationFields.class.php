@@ -123,8 +123,9 @@ class Registration_Fields extends Group_Buying_Controller {
 	public static function process_form( Group_Buying_Account $account ) {
 		// Copy all of the new fields below, copy the below if it's a basic field.
 		if ( isset( $_POST[self::MOBILE] ) && $_POST[self::MOBILE] != '' ) {
+			$phone = preg_replace( '/[^0-9]/', '', $_POST[self::MOBILE] );
 			delete_post_meta( $account->get_ID(), '_'.self::MOBILE );
-			add_post_meta( $account->get_ID(), '_'.self::MOBILE, $_POST[self::MOBILE] );
+			add_post_meta( $account->get_ID(), '_'.self::MOBILE, $phone );
 			delete_post_meta( $account->get_ID(), '_'.self::MOBILE_CODE );
 			add_post_meta( $account->get_ID(), '_'.self::MOBILE_CODE, $_POST[self::MOBILE_CODE] );
 		}
@@ -170,6 +171,13 @@ class Registration_Fields extends Group_Buying_Controller {
 		// If the field is required it should
 		if ( isset( $post[self::MOBILE] ) && $post[self::MOBILE] == '' ) {
 			$errors[] = self::__( '"Mobile" is required.' );
+		}
+		// If the field is required it should
+		if ( isset( $post[self::MOBILE] ) ) {
+			$phone = preg_replace( '/[^0-9]/', '', $_POST[self::MOBILE] );
+			if ( strlen( $phone ) != 10 ) {
+				$errors[] = self::__( '"Mobile" number is invalid. Number should be only 10 digits in length.' );
+			}
 		}
 		return $errors;
 	}
