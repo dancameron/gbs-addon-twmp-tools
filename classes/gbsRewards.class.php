@@ -193,7 +193,7 @@ class GB_Affiliates_Ext {
 					$credit = $applied_credits; // this will be set multiple times but be the same.
 					if ( GBS_DEV ) error_log( "deal based rewards class not found: " . print_r( $applied_credits, true ) );
 				}
-			} 
+			}
 			else {
 				$vouchers_active = FALSE;
 			}
@@ -215,7 +215,7 @@ class GB_Affiliates_Ext {
 			self::affiliate_record( $affiliate_account, $purchaser_account, $payment->get_ID(), $credit, $credit_type, $set_current_time);
 		}
 		return $credit;
-		
+
 	}
 
 	// TODO move this to records controller
@@ -231,9 +231,12 @@ class GB_Affiliates_Ext {
 		$data['type'] = $type;
 		$data['current_total_'.$type] = $balance;
 		$data['change_'.$type] = $credits;
+		$data['adjustment_value'] = $credits;
+		$data['current_total'] = $balance;
+		$data['prior_total'] = $balance-$credits;
 		Group_Buying_Records::new_record( sprintf( gb__( '%s Points from %s (#%s) - Delayed from %s.' ), ucfirst( $type ), $purchaser_name, $purchaser_id, date( get_option( 'date_format' ).' @ '.get_option( 'time_format' ), $set_current_time ) ), $type, sprintf( gb__( '%s Points from %s (#%s) - Delayed from %s.' ), ucfirst( $type ), $purchaser_name, $purchaser_id, date( get_option( 'date_format' ).' @ '.get_option( 'time_format' ), $set_current_time ) ), 1, $account_id, $data );
 	}
-	
+
 	public function filter_where( $where = '' ) {
 		// posts 15+ old
 		$offset = apply_filters( 'gb_twm_where_filter_delay', date('Y-m-d', strtotime('-15 days')) );
@@ -351,9 +354,9 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 	}
 
 	/**
-	 * Delay all credits from being applied, the record will be reviewed later 
+	 * Delay all credits from being applied, the record will be reviewed later
 	 * and credits will be applied based on the purchase and voucher activation.
-	 * 
+	 *
 	 *
 	 * @param Group_Buying_Purchase $purchase
 	 * @return void
@@ -435,7 +438,7 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 		$records = new WP_Query($args);
 		$record_ids = $records->posts;
 		remove_filter( 'posts_where', array( get_class(), 'filter_where' ) ); // Remove filter
-		
+
 		if ( GBS_DEV ) error_log( "returned reward records: " . print_r( $record_ids, true ) );
 
 		if ( empty( $record_ids ) )
@@ -476,10 +479,12 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 			if ( $voucher->is_active() ) { // Check to make sure the voucher is active
 				$deal_id = $voucher->get_deal_id();
 				$deal = Group_Buying_Deal::get_instance( $deal_id );
-				$reward_option = self::get_reward($deal);
-				// qty does not need to be considered since every voucher is looped.
-				if ( $reward_option >= 0.01 ) {
-					$reward += $reward_option;
+				if ( is_a( $deal, 'Group_Buying_Deal' ) ) {
+					$reward_option = self::get_reward($deal);
+					// qty does not need to be considered since every voucher is looped.
+					if ( $reward_option >= 0.01 ) {
+						$reward += $reward_option;
+					}
 				}
 			}
 			else {
@@ -492,13 +497,13 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 		if ( GBS_DEV ) error_log( "reward to apply: " . print_r( $reward, true ) );
 		// If we have credits apply them, fire an action and send the notification
 		if ( $reward ) {
-			
+
 			$purchase = Group_Buying_Purchase::get_instance( $purchase_id );
-			
+
 			// Check if the purchase used rewards
 			if ( $credits_used = self::purchase_used_credits( $purchase ) ) {
 				if ( GBS_DEV ) error_log( "purchase did have credits: " . print_r( $credits_used, true ) );
-				
+
 				$purchase_total = $purchase->get_total();
 				$subtotal = $purchase_total-$credits_used;
 				$percentage = $subtotal/$purchase_total;
@@ -517,7 +522,7 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 			self::reward_applied_record( $account, $payment->get_ID(), $reward, $credit_type );
 		}
 		return $reward;
-		
+
 	}
 
 	public static function reward_applied_record( $account, $payment_id, $credits, $type ) {
@@ -530,6 +535,9 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 		$data['type'] = $type;
 		$data['current_total_'.$type] = $balance;
 		$data['change_'.$type] = $credits;
+		$data['adjustment_value'] = $credits;
+		$data['current_total'] = $balance;
+		$data['prior_total'] = $balance-$credits;
 		if ( GBS_DEV ) error_log( "data: " . print_r( $data, true ) );
 		Group_Buying_Records::new_record( sprintf( gb__( 'Purchase Reward from Payment #%s' ), $payment_id ), $type, sprintf( gb__( 'Purchase Reward from Payment #%s' ), $payment_id ), 1, $account_id, $data );
 	}
@@ -546,7 +554,7 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 		if ( GBS_DEV ) error_log( "notification data: " . print_r( $data, true ) );
 		Group_Buying_Notifications::send_notification( self::NOTIFICATION_TYPE, $data, $to );
 	}
-	
+
 	public function filter_where( $where = '' ) {
 		// posts 15+ old
 		$offset = apply_filters( 'gb_twm_where_filter_delay', date('Y-m-d', strtotime('-15 days')) );
@@ -646,7 +654,7 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 			<p>
 				<label for="purchase_reward"><?php gb_e('Purchase Reward:') ?> </label><input type="text" value="<?php echo $reward; ?>" name="purchase_reward" id="purchase_reward" placeholder="0" />
 			</p>
-		<?php 
+		<?php
 	}
 
 	public static function save_meta_boxes( $post_id, $post ) {
