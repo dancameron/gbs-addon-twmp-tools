@@ -1,5 +1,5 @@
 <fieldset id="gb-account-fields-info">
-	<h2 class="section_heading gb_ff"><?php self::_e('Additional Information'); ?></h2>
+	<h2 class="register_section_heading gb_ff"><?php self::_e('Additional Information'); ?></h2>
 	<table class="account-fields collapsable subscription form-table">
 		<tbody>
 			<?php foreach ( $fields as $key => $data ): ?>
