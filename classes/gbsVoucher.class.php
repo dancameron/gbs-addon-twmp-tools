@@ -96,9 +96,9 @@ class GBS_Vouchers_Extension {
 	}
 
 	public function find_pending_vouchers() {
-		
+
 		usleep( rand(1000, 100000) ); // Sleep for a random second+ so this won't be executed in parallel.
-		
+
 		// Filter the post query so that it returns only pending vouchers a day+ old
 		add_filter( 'posts_where', array( get_class(), 'filter_where' ) );
 		$args = array(
@@ -115,7 +115,7 @@ class GBS_Vouchers_Extension {
 		foreach ( $vouchers->posts as $voucher_id ) {
 			self::maybe_send_notification( $voucher_id );
 		}
-		
+
 	}
 
 	public function maybe_send_final_notification( Group_Buying_Payment $payment ) {
@@ -152,7 +152,7 @@ class GBS_Vouchers_Extension {
 		if ( !is_a( $deal, 'Group_Buying_Deal' ) ) {
 			return FALSE;
 		}
-		
+
 		// Attempt to send the final notification first, since it's of higher priority and we don't want to send
 		// the 1/3 day notifications immediately before this one in case the customer just purchased before the deal closure.
 		if ( $deal->is_closed() ) {
@@ -190,7 +190,7 @@ class GBS_Vouchers_Extension {
 		$voucher_id = $voucher->get_id();
 		if ( self::was_notification_sent( $voucher_id, $type ) )
 			return FALSE;
-		
+
 		if ( GBS_DEV ) error_log( "voucher notications not sent yet: " . print_r( $voucher_id, true ) );
 
 		$purchase = $voucher->get_purchase();
@@ -224,7 +224,7 @@ class GBS_Vouchers_Extension {
 		}
 		return;
 	}
-	
+
 	public function filter_where( $where = '' ) {
 		// posts 1+ old
 		$where .= " AND post_date <= '" . date('Y-m-d', current_time('timestamp')-43200 ) . "'";
@@ -327,7 +327,7 @@ class GBS_Vouchers_Extension {
 					wp_update_post( $post_obj );
 					do_action( 'voucher_marked_pending', $this );
 				}
-			} 
+			}
 			else {
 				$voucher->activate();
 			}

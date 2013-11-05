@@ -144,11 +144,8 @@ class Registration_Fields extends Group_Buying_Controller {
 	 * @return null
 	 */
 	public static function set_attachement( $post_id, $files ) {
-		if ( !function_exists( 'wp_generate_attachment_metadata' ) ) {
-			require_once ABSPATH . 'wp-admin' . '/includes/image.php';
-			require_once ABSPATH . 'wp-admin' . '/includes/file.php';
-			require_once ABSPATH . 'wp-admin' . '/includes/media.php';
-		}
+		Group_Buying_UI::load_wp_media();
+		
 		foreach ( $files as $file => $array ) {
 			if ( $files[$file]['error'] !== UPLOAD_ERR_OK ) {
 				self::set_message( 'upload error : ' . $files[$file]['error'] );
