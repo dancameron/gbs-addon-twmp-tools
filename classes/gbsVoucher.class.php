@@ -110,7 +110,7 @@ class GBS_Vouchers_Extension {
 		$vouchers = new WP_Query($args);
 		remove_filter( 'posts_where', array( get_class(), 'filter_where' ) );
 
-		if ( GBS_DEV ) error_log( "pending vouchers: " . print_r( $vouchers->posts, true ) );
+		// if ( GBS_DEV ) error_log( "pending vouchers: " . print_r( $vouchers->posts, true ) );
 
 		foreach ( $vouchers->posts as $voucher_id ) {
 			self::maybe_send_notification( $voucher_id );
@@ -119,17 +119,17 @@ class GBS_Vouchers_Extension {
 	}
 
 	public function maybe_send_final_notification( Group_Buying_Payment $payment ) {
-		if ( GBS_DEV ) error_log( "maybe send notification after offsite purchase: " . print_r( $payment, true ) );
+		// if ( GBS_DEV ) error_log( "maybe send notification after offsite purchase: " . print_r( $payment, true ) );
 		$purchase_id = $payment->get_purchase();
 		$purchase = Group_Buying_Purchase::get_instance( $purchase_id );
 		$products = $purchase->get_products();
 		foreach ( $products as $product ) {
-			if ( GBS_DEV ) error_log( "products: " . print_r( $products, true ) );
+			// if ( GBS_DEV ) error_log( "products: " . print_r( $products, true ) );
 			$deal = Group_Buying_Deal::get_instance( $product['deal_id'] );
 			if ( $deal->is_successful() ) {
-				if ( GBS_DEV ) error_log( "deal is successful: " . print_r( $product['deal_id'], true ) );
+				// if ( GBS_DEV ) error_log( "deal is successful: " . print_r( $product['deal_id'], true ) );
 				$vouchers = Group_Buying_Voucher::get_pending_vouchers( $product['deal_id'], $purchase_id ); // Added purchase id 4.3.x so that only this purchase vouchers are returned.
-				if ( GBS_DEV ) error_log( "vouchers to loop: " . print_r( $vouchers, true ) );
+				// if ( GBS_DEV ) error_log( "vouchers to loop: " . print_r( $vouchers, true ) );
 				foreach ( $vouchers as $voucher_id ) {
 					self::maybe_send_notification( $voucher_id );
 				}
@@ -138,13 +138,13 @@ class GBS_Vouchers_Extension {
 	}
 
 	public function maybe_send_notification( $voucher_id, $set_current_time = 0 ) {
-		if ( GBS_DEV ) error_log( "maybe send voucher notification: " . print_r( $voucher_id, true ) );
+		// if ( GBS_DEV ) error_log( "maybe send voucher notification: " . print_r( $voucher_id, true ) );
 		// Check if final notification was sent, if so we don't want to send any others.
 		if ( self::was_notification_sent( $voucher_id, self::NOTIFICATION_TYPE_FINAL ) )
 			return FALSE;
 
 
-		if ( GBS_DEV ) error_log( "final not sent yet: " . print_r( $voucher_id, true ) );
+		// if ( GBS_DEV ) error_log( "final not sent yet: " . print_r( $voucher_id, true ) );
 
 		$voucher = Group_Buying_Voucher::get_instance( $voucher_id );
 		$deal = $voucher->get_deal();
@@ -156,7 +156,7 @@ class GBS_Vouchers_Extension {
 		// Attempt to send the final notification first, since it's of higher priority and we don't want to send
 		// the 1/3 day notifications immediately before this one in case the customer just purchased before the deal closure.
 		if ( $deal->is_closed() ) {
-			if ( GBS_DEV ) error_log( "check if final notification can be sent: " . print_r( $deal->get_id(), true ) );
+			// if ( GBS_DEV ) error_log( "check if final notification can be sent: " . print_r( $deal->get_id(), true ) );
 			self::voucher_notification( self::NOTIFICATION_TYPE_FINAL, $voucher );
 			return TRUE;
 		}
@@ -165,20 +165,20 @@ class GBS_Vouchers_Extension {
 		$voucher_date = get_the_time( 'U', $voucher_id );
 		$set_current_time = ( $set_current_time ) ? $set_current_time : current_time('timestamp'); // Allow the time to be set.
 
-		if ( GBS_DEV ) error_log( "voucher date: " . print_r( date( get_option( 'date_format' ).' @ '.get_option( 'time_format' ), $voucher_date ), true ) );
-		if ( GBS_DEV ) error_log( "set current date: " . print_r( date( get_option( 'date_format' ).' @ '.get_option( 'time_format' ), $set_current_time ), true ) );
+		// if ( GBS_DEV ) error_log( "voucher date: " . print_r( date( get_option( 'date_format' ).' @ '.get_option( 'time_format' ), $voucher_date ), true ) );
+		// if ( GBS_DEV ) error_log( "set current date: " . print_r( date( get_option( 'date_format' ).' @ '.get_option( 'time_format' ), $set_current_time ), true ) );
 
 
 		// If the voucher is older than 3 days we can assume the 1 day voucher notification was already sent.
 		if ( $voucher_date <= ( $set_current_time - 259200 ) ) { // If older than three days
-			if ( GBS_DEV ) error_log( "check if three day notification can be sent: " . print_r( $voucher_id, true ) );
+			// if ( GBS_DEV ) error_log( "check if three day notification can be sent: " . print_r( $voucher_id, true ) );
 			self::voucher_notification( self::NOTIFICATION_TYPE_3DAY, $voucher );
 			return TRUE;
 		}
 
 		// If we got this far no notifications have been sent at all.
 		if ( $voucher_date <= ( $set_current_time - 86400 ) ) { // If older than one day
-			if ( GBS_DEV ) error_log( "check if one day notification can be sent: " . print_r( $voucher_id, true ) );
+			// if ( GBS_DEV ) error_log( "check if one day notification can be sent: " . print_r( $voucher_id, true ) );
 			self::voucher_notification( self::NOTIFICATION_TYPE, $voucher );
 			return TRUE;
 		}
@@ -191,7 +191,7 @@ class GBS_Vouchers_Extension {
 		if ( self::was_notification_sent( $voucher_id, $type ) )
 			return FALSE;
 		
-		if ( GBS_DEV ) error_log( "voucher notications not sent yet: " . print_r( $voucher_id, true ) );
+		// if ( GBS_DEV ) error_log( "voucher notications not sent yet: " . print_r( $voucher_id, true ) );
 
 		$purchase = $voucher->get_purchase();
 		$deal = $voucher->get_deal();
@@ -205,21 +205,21 @@ class GBS_Vouchers_Extension {
 				'purchase' => $purchase,
 				'deal' => $deal
 			);
-			if ( GBS_DEV ) error_log( "notification to: " . print_r( $to, true ) );
+			// if ( GBS_DEV ) error_log( "notification to: " . print_r( $to, true ) );
 			Group_Buying_Notifications::send_notification( $type, $data, $to );
 			self::mark_notification_sent( $voucher_id, $type );
 		}
 	}
 
 	public function mark_notification_sent( $voucher_id, $type ) {
-		if ( GBS_DEV ) error_log( "mark_notification_sent: " . print_r( $voucher_id, true ) );
+		// if ( GBS_DEV ) error_log( "mark_notification_sent: " . print_r( $voucher_id, true ) );
 		return update_post_meta( $voucher_id, self::NOTIFICATION_SENT_META_KEY.'_'.$type, time() );
 	}
 
 	public function was_notification_sent( $voucher_id, $type ) {
 		$notification_sent = get_post_meta( $voucher_id, self::NOTIFICATION_SENT_META_KEY.'_'.$type, TRUE );
 		if ( $notification_sent ) {
-			if ( GBS_DEV ) error_log( "notification for this voucher was sent: " . print_r( date( get_option( 'date_format' ).' @ '.get_option( 'time_format' ), $notification_sent ), true ) );
+			// if ( GBS_DEV ) error_log( "notification for this voucher was sent: " . print_r( date( get_option( 'date_format' ).' @ '.get_option( 'time_format' ), $notification_sent ), true ) );
 			return TRUE;
 		}
 		return;
