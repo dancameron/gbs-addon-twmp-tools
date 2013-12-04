@@ -325,6 +325,7 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 	private static $credit_type;
 
 	private static $meta_keys = array(
+		'display' => '_gbs_purchase_credit_display', // bool
 		'reward' => '_gbs_purchase_credit_option', // bool
 		'qty_option' => '_gbs_purchase_credit_option_quanity', // int
 	);
@@ -653,9 +654,13 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 
 	private static function show_meta_box( Group_Buying_Deal $deal, $post, $metabox ) {
 		$reward = self::get_reward( $deal );
+		$display = self::get_display( $deal );
 		?>
 			<p>
 				<label for="purchase_reward"><?php gb_e('Purchase Reward:') ?> </label><input type="text" value="<?php echo $reward; ?>" name="purchase_reward" id="purchase_reward" placeholder="0" />
+			</p>
+			<p>	
+				<label for="purchase_reward_display_option"><input type="checkbox" <?php checked( 1, $display ) ?> name="purchase_reward_display_option" id="purchase_reward_display_option"> Display</label>
 			</p>
 		<?php
 	}
@@ -683,14 +688,37 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 		if ( isset( $_POST['purchase_reward_qty_option'] ) && 'TRUE' == $_POST['purchase_reward_qty_option'] ) {
 			self::set_reward_qty_option( $deal, 1 );
 		}
+		// reset the values.
+		self::set_display( $deal, '' );
+		self::set_reward( $deal, '' );
 
 		if ( isset( $_POST['purchase_reward'] ) && (int)$_POST['purchase_reward'] > 0 ) {
 			$reward = (int)$_POST['purchase_reward'];
 			self::set_reward( $deal, $reward );
+
+			// display options
+			if ( isset( $_POST['purchase_reward_display_option'] ) ) {
+				self::set_display( $deal, 1 );
+			}
 		}
 
 	}
 
+
+	public function get_display( Group_Buying_Deal $deal ) {
+		return $deal->get_post_meta( self::$meta_keys['display'] );
+	}
+	public function set_display( Group_Buying_Deal $deal, $display ) {
+		return $deal->save_post_meta( array( self::$meta_keys['display'] => $display ) );
+	}
+	public function display_reward( $post_id = 0 ) {
+		if ( !$post_id ) {
+			global $post;
+			$post_id = $post->ID;
+		}
+		$deal = Group_Buying_Deal::get_instance( $post_id );
+		return $deal->get_post_meta( self::$meta_keys['display'] );
+	}
 
 	public function get_reward( Group_Buying_Deal $deal ) {
 		return $deal->get_post_meta( self::$meta_keys['reward'] );
