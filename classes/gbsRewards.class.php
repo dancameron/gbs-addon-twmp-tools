@@ -106,13 +106,13 @@ class GB_Affiliates_Ext {
 			'credit_type' => $credit_type,
 			'current_time' => current_time('timestamp')
 		);
-		if ( GBS_DEV ) error_log( "record data: " . print_r( $data, true ) );
+		// if ( GBS_DEV ) error_log( "record data: " . print_r( $data, true ) );
 		$record_id = Group_Buying_Records::new_record( '', self::RECORD_TYPE, 'Delayed Credit: #'.$data['account_id'], $data['account_id'], $data['account_id'], $data );
 		if ( !$record_id ) {
 			$records = Group_Buying_Record::get_records_by_type_and_association( $data['account_id'], self::RECORD_TYPE );
 			$record_id = max( $records );
 		}
-		if ( GBS_DEV ) error_log( "credit ++++++++ record_id: " . print_r( $record_id, true ) );
+		// if ( GBS_DEV ) error_log( "credit ++++++++ record_id: " . print_r( $record_id, true ) );
 		do_action( 'delay_credits_function', $record_id, $affiliate_account, $payment, $applied_credits, $credit_type );
 
 	}
@@ -145,7 +145,7 @@ class GB_Affiliates_Ext {
 		$records = new WP_Query($args);
 		$record_ids = $records->posts;
 		remove_filter( 'posts_where', array( get_class(), 'filter_where' ) ); // Remove filter
-		if ( GBS_DEV ) error_log( "returned records delayed credits: " . print_r( $record_ids, true ) );
+		// if ( GBS_DEV ) error_log( "returned records delayed credits: " . print_r( $record_ids, true ) );
 
 		if ( empty( $record_ids ) )
 			return;
@@ -153,9 +153,9 @@ class GB_Affiliates_Ext {
 		// Loop through all the records and attempt to apply credits, or delete.
 		foreach ( $record_ids as $record_id ) {
 			$record = Group_Buying_Record::get_instance( $record_id );
-			if ( GBS_DEV ) error_log( "credit +++++++ record: " . print_r( $record_id, true ) );
+			// if ( GBS_DEV ) error_log( "credit +++++++ record: " . print_r( $record_id, true ) );
 			$data = $record->get_data();
-			if ( GBS_DEV ) error_log( "record data: " . print_r( $data, true ) );
+			// if ( GBS_DEV ) error_log( "record data: " . print_r( $data, true ) );
 			$affiliate_account = Group_Buying_Account::get_instance_by_id( $data['account_id'] );
 			$payment = Group_Buying_Payment::get_instance( $data['payment_id'] );
 			if ( !is_a( $payment, 'Group_Buying_Payment' ) ) {
@@ -163,7 +163,7 @@ class GB_Affiliates_Ext {
 				return;
 			}
 			$applied = self::maybe_apply_credit( $affiliate_account, $payment, $data['credits'], $data['credit_type'], $data['current_time'] );
-			if ( GBS_DEV ) error_log( "applied: " . print_r( $applied, true ) );
+			// if ( GBS_DEV ) error_log( "applied: " . print_r( $applied, true ) );
 			if ( $applied < 0 || $applied > 0 ) { // If applied remove the record, -1 is given if the record should not be checked again.
 				wp_delete_post( $record_id, TRUE );
 			}
@@ -185,13 +185,13 @@ class GB_Affiliates_Ext {
 				if ( class_exists('Group_Buying_Deal_Rewards') ) {
 					$deal_id = $voucher->get_deal_id();
 					$user_id = $affiliate_account->get_user_id();
-					if ( GBS_DEV ) error_log( "user id: " . print_r( $user_id, true ) );
+					// if ( GBS_DEV ) error_log( "user id: " . print_r( $user_id, true ) );
 					// apply the credits but base it off Group_Buying_Deal_Rewards::get_product_credits again.
 					$credit += Group_Buying_Deal_Rewards::get_product_credits( $deal_id, $user_id, $affiliate_account, $purchaser_account, $set_current_time );
-					if ( GBS_DEV ) error_log( "active voucher credits: " . print_r( $credit, true ) );
+					// if ( GBS_DEV ) error_log( "active voucher credits: " . print_r( $credit, true ) );
 				} else { // fallback in case Deal Based Rewards is not active.
 					$credit = $applied_credits; // this will be set multiple times but be the same.
-					if ( GBS_DEV ) error_log( "deal based rewards class not found: " . print_r( $applied_credits, true ) );
+					// if ( GBS_DEV ) error_log( "deal based rewards class not found: " . print_r( $applied_credits, true ) );
 				}
 			}
 			else {
@@ -202,11 +202,11 @@ class GB_Affiliates_Ext {
 			error_log( "++++++++++++++++++ Vouchers not activated no sharing applied and the record is deleted +++++++++++++++++++++++++++++++: " . print_r( TRUE, true ) );
 			return -1; // don't allow for this check again since a voucher not activated after 14 days is not good.
 		}
-		if ( GBS_DEV ) error_log( "credit to apply back: " . print_r( $credit, true ) );
+		// if ( GBS_DEV ) error_log( "credit to apply back: " . print_r( $credit, true ) );
 		// If we have credits apply them, fire an action and send the notification
 		if ( $credit ) {
 			$credit = floor($credit);
-			if ( GBS_DEV ) error_log( "to apply: " . print_r( $credit, true ) );
+			// if ( GBS_DEV ) error_log( "to apply: " . print_r( $credit, true ) );
 			$affiliate_account->add_credit( $credit, $credit_type );
 			do_action( 'gb_apply_credits_with_reg_restriction', $affiliate_account, $payment, $credit, $credit_type );
 			// Fire off the notification manually
@@ -366,9 +366,9 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 		// Rewards are not provided to payments with credits applied. This will also prevent duplicate records
 		// since purchases will not consist of two payment processors without credits being the second.
 		$payment_method = $payment->get_payment_method();
-		if ( GBS_DEV ) error_log( "delay_apply_rewards - payment method: " . print_r( $payment_method, true ) );
+		// if ( GBS_DEV ) error_log( "delay_apply_rewards - payment method: " . print_r( $payment_method, true ) );
 		if ( $payment_method == Group_Buying_Account_Balance_Payments::PAYMENT_METHOD || $payment_method == Group_Buying_Affiliate_Credit_Payments::PAYMENT_METHOD ) {
-			if ( GBS_DEV ) error_log( "credit payment don't apply rewards: " . print_r( TRUE, true ) );
+			// if ( GBS_DEV ) error_log( "credit payment don't apply rewards: " . print_r( TRUE, true ) );
 			return;
 		}
 
@@ -386,7 +386,7 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 				$possible_rewards = TRUE;
 			}
 		}
-		if ( GBS_DEV ) error_log( "possible_rewards: " . print_r( $reward, true ) );
+		// if ( GBS_DEV ) error_log( "possible_rewards: " . print_r( $reward, true ) );
 
 		if ( !$possible_rewards ) { // If the purchase doesn't have any rewards stop before creating records
 			return;
@@ -399,13 +399,13 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 			'credit_type' => self::$credit_type,
 			'current_time' => current_time('timestamp')
 		);
-		if ( GBS_DEV ) error_log( "record data: " . print_r( $data, true ) );
+		// if ( GBS_DEV ) error_log( "record data: " . print_r( $data, true ) );
 		$record_id = Group_Buying_Records::new_record( '', self::RECORD_TYPE, 'Delayed Reward: #'.$data['account_id'], $data['account_id'], $data['account_id'], $data );
 		if ( !$record_id ) {
 			$records = Group_Buying_Record::get_records_by_type_and_association( $data['account_id'], self::RECORD_TYPE );
 			$record_id = max( $records );
 		}
-		if ( GBS_DEV ) error_log( "record record_id: " . print_r( $record_id, true ) );
+		// if ( GBS_DEV ) error_log( "record record_id: " . print_r( $record_id, true ) );
 		do_action( 'delay_rewards_function', $record_id, $account, $payment, self::$credit_type );
 	}
 
@@ -439,17 +439,17 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 		$record_ids = $records->posts;
 		remove_filter( 'posts_where', array( get_class(), 'filter_where' ) ); // Remove filter
 
-		if ( GBS_DEV ) error_log( "returned reward records: " . print_r( $record_ids, true ) );
+		// if ( GBS_DEV ) error_log( "returned reward records: " . print_r( $record_ids, true ) );
 
 		if ( empty( $record_ids ) )
 			return;
 
 		// Loop through all the records and attempt to apply credits, or delete.
 		foreach ( $record_ids as $record_id ) {
-			if ( GBS_DEV ) error_log( "reward record : " . print_r( $record_id, true ) );
+			// if ( GBS_DEV ) error_log( "reward record : " . print_r( $record_id, true ) );
 			$record = Group_Buying_Record::get_instance( $record_id );
 			$data = $record->get_data();
-			if ( GBS_DEV ) error_log( "data: " . print_r( $data, true ) );
+			// if ( GBS_DEV ) error_log( "data: " . print_r( $data, true ) );
 			$account = Group_Buying_Account::get_instance_by_id( $data['account_id'] );
 			$payment = Group_Buying_Payment::get_instance( $data['payment_id'] );
 			if ( !is_a( $payment, 'Group_Buying_Payment' ) ) {
@@ -457,9 +457,9 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 				return;
 			}
 			$applied = self::maybe_apply_reward( $account, $payment, $data['credit_type'], $data['current_time'] );
-			if ( GBS_DEV ) error_log( "applied: " . print_r( $applied, true ) );
+			// if ( GBS_DEV ) error_log( "applied: " . print_r( $applied, true ) );
 			if ( $applied < 0 || $applied > 0 ) { // If applied remove the record, -1 is given if the record should not be checked again.
-				if ( GBS_DEV ) error_log( "deleted: " . print_r( $record_id, true ) );
+				// if ( GBS_DEV ) error_log( "deleted: " . print_r( $record_id, true ) );
 				wp_delete_post( $record_id, TRUE );
 			}
 		}
@@ -494,7 +494,7 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 		if ( !$reward && !$vouchers_active ) { // If there are no credits to apply and the vouchers are not active
 			return -1; // don't allow for this check again since a voucher not activated after 14 days is not good.
 		}
-		if ( GBS_DEV ) error_log( "reward to apply: " . print_r( $reward, true ) );
+		// if ( GBS_DEV ) error_log( "reward to apply: " . print_r( $reward, true ) );
 		// If we have credits apply them, fire an action and send the notification
 		if ( $reward ) {
 
@@ -502,15 +502,15 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 
 			// Check if the purchase used rewards
 			if ( $credits_used = self::purchase_used_credits( $purchase ) ) {
-				if ( GBS_DEV ) error_log( "purchase did have credits: " . print_r( $credits_used, true ) );
+				// if ( GBS_DEV ) error_log( "purchase did have credits: " . print_r( $credits_used, true ) );
 
 				$purchase_total = $purchase->get_total();
 				$subtotal = $purchase_total-$credits_used;
 				$percentage = $subtotal/$purchase_total;
-				if ( GBS_DEV ) error_log( "percentage: " . print_r( $percentage, true ) );
+				// if ( GBS_DEV ) error_log( "percentage: " . print_r( $percentage, true ) );
 				// Calculate the credits to reward based on the purchase, otherwise just return 0.
 				$reward = $reward*$percentage;
-				if ( GBS_DEV ) error_log( "percentage: " . print_r( $reward, true ) );
+				// if ( GBS_DEV ) error_log( "percentage: " . print_r( $reward, true ) );
 			}
 
 			$reward = floor($reward);
@@ -538,7 +538,7 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 		$data['adjustment_value'] = $credits;
 		$data['current_total'] = $balance;
 		$data['prior_total'] = $balance-$credits;
-		if ( GBS_DEV ) error_log( "data: " . print_r( $data, true ) );
+		// if ( GBS_DEV ) error_log( "data: " . print_r( $data, true ) );
 		Group_Buying_Records::new_record( sprintf( gb__( 'Purchase Reward from Payment #%s' ), $payment_id ), $type, sprintf( gb__( 'Purchase Reward from Payment #%s' ), $payment_id ), 1, $account_id, $data );
 	}
 
@@ -551,7 +551,7 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 			'payment' => $payment,
 			'type' => $type
 		);
-		if ( GBS_DEV ) error_log( "notification data: " . print_r( $data, true ) );
+		// if ( GBS_DEV ) error_log( "notification data: " . print_r( $data, true ) );
 		Group_Buying_Notifications::send_notification( self::NOTIFICATION_TYPE, $data, $to );
 	}
 
@@ -574,13 +574,13 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 		foreach ( $payments as $payment_id ) {
 			$payment = Group_Buying_Payment::get_instance( $payment_id );
 			$payment_method = $payment->get_payment_method();
-			if ( GBS_DEV ) error_log( "payment method: " . print_r( $payment_method, true ) );
+			// if ( GBS_DEV ) error_log( "payment method: " . print_r( $payment_method, true ) );
 			if ( $payment_method == Group_Buying_Account_Balance_Payments::PAYMENT_METHOD || $payment_method == Group_Buying_Affiliate_Credit_Payments::PAYMENT_METHOD ) {
-				if ( GBS_DEV ) error_log( "payment amount: " . print_r( $payment->get_amount(), true ) );
+				// if ( GBS_DEV ) error_log( "payment amount: " . print_r( $payment->get_amount(), true ) );
 				$credits_used += $payment->get_amount();
 			}
 		}
-		if ( GBS_DEV ) error_log( "purchase used credits: " . print_r( $credits_used, true ) );
+		// if ( GBS_DEV ) error_log( "purchase used credits: " . print_r( $credits_used, true ) );
 		return $credits_used;
 	}
 
