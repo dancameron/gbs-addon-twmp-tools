@@ -556,9 +556,12 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 	}
 
 	public function filter_where( $where = '' ) {
+		/**
+		 * Disabling delay... */ /*/
 		// posts 15+ old
 		$offset = apply_filters( 'gb_twm_where_filter_delay', date('Y-m-d', strtotime('-15 days')) );
 		$where .= " AND post_date <= '" . $offset . "'";
+		/**/
 		return $where;
 	}
 
