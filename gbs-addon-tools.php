@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: Group Buying Addon - GBS Tools
-Version: 1.4.1
+Version: 1.4.2
 Description: Multiple Add-ons and Customizations for the the GBS platform.
 Plugin URI: http://groupbuyingsite.com/
 Author: GroupBuyingSite.com
