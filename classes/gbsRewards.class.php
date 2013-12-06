@@ -120,7 +120,7 @@ class GB_Affiliates_Ext {
 	public function find_delayed_credits() {
 		// filter to get 14+ day old records
 		add_filter( 'posts_where', array( get_class(), 'filter_where' ) );
-		if ( defined( Group_Buying_Record::TAXONOMY ) && taxonomy_exists( Group_Buying_Record::TAXONOMY ) ) { // In case the records post type moves to use taxonomies and not meta for types.
+		if ( defined( 'Group_Buying_Record::TAXONOMY' ) && taxonomy_exists( Group_Buying_Record::TAXONOMY ) ) { // In case the records post type moves to use taxonomies and not meta for types.
 			$args = array(
 				'post_type' => Group_Buying_Record::POST_TYPE,
 				'post_status' => 'pending',
@@ -414,7 +414,7 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 
 		// filter to get 14+ day old records
 		add_filter( 'posts_where', array( get_class(), 'filter_where' ) );
-		if ( defined( Group_Buying_Record::TAXONOMY ) && taxonomy_exists( Group_Buying_Record::TAXONOMY ) ) { // In case the records post type moves to use taxonomies and not meta for types.
+		if ( defined( 'Group_Buying_Record::TAXONOMY' ) && taxonomy_exists( Group_Buying_Record::TAXONOMY ) ) { // In case the records post type moves to use taxonomies and not meta for types.
 			$args = array(
 				'post_type' => Group_Buying_Record::POST_TYPE,
 				'post_status' => 'pending',
