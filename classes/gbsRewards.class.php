@@ -401,7 +401,7 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 			'current_time' => current_time('timestamp')
 		);
 		// if ( GBS_DEV ) error_log( "record data: " . print_r( $data, true ) );
-		$record_id = Group_Buying_Records::new_record( '', self::RECORD_TYPE, 'Delayed Reward: #'.$data['account_id'], $data['account_id'], $data['account_id'], $data );
+		$record_id = Group_Buying_Records::new_record( '', self::RECORD_TYPE, 'Delayed Reward: Acount ID #'.$data['account_id'], $data['account_id'], $data['account_id'], $data );
 		if ( !$record_id ) {
 			$records = Group_Buying_Record::get_records_by_type_and_association( $data['account_id'], self::RECORD_TYPE );
 			$record_id = max( $records );
