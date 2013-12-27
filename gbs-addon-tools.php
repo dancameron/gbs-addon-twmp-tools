@@ -33,7 +33,7 @@ if ( !function_exists('gbs_twmp_toolchain_load') ) { // play nice
 		Group_Buying_Registration_Fields_Addon::init();
 		GB_Merchant_Meta_Addon::init();
 	}
-	add_action( 'plugins_loaded', 'gbs_twmp_toolchain_load', 1000 ); // Attempt to load up the toolchain after the other plugins.
+	add_action( 'group_buying_load', 'gbs_twmp_toolchain_load', 1000 ); // Attempt to load up the toolchain after the other plugins.
 }
 
 /**

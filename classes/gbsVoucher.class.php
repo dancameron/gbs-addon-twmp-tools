@@ -374,8 +374,6 @@ class GBS_Vouchers_Extension {
 	}
 }
 
-
-
 class GBS_VoucherExpiry_Addon_Adv extends Group_Buying_Controller {
 	const EXP_OPTION = 'gb_voucher_exp_option';
 	private static $exp;
