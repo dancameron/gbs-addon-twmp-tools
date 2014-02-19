@@ -262,7 +262,7 @@ class GBS_Vouchers_Extension {
 			<script type="text/javascript" charset="utf-8">
 			jQuery(document).ready(function($){
 				var voucher_activation_ajax_url = '<?php echo admin_url() ?>admin-ajax.php';
-				jQuery(".gb_activate").on('click', function(event) {
+				jQuery(document.body).on('click', '.gb_activate', function(event){
 					event.preventDefault();
 						if( confirm( '<?php gb_e("Are you sure? This will make the voucher immediately available for download.") ?>' ) ){
 							var $activate_voucher_id = $( this ),
@@ -277,7 +277,7 @@ class GBS_Vouchers_Extension {
 							// nothing to do.
 						}
 				});
-				jQuery(".gb_deactivate").on('click', function(event) {
+				jQuery(document.body).on('click', '.gb_deactivate', function(event){
 					event.preventDefault();
 						if( confirm( '<?php gb_e("Are you sure? This will immediately remove the voucher from customer access.") ?>' ) ) {
 							var $deactivate_button = $( this ),
