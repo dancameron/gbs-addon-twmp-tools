@@ -342,8 +342,8 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 		add_action( 'add_meta_boxes', array( get_class(), 'add_meta_boxes' ) );
 		add_action( 'save_post', array( get_class(), 'save_meta_boxes' ), 10, 2 );
 
-		add_action( 'init', array( get_class(), 'find_delayed_credits' ) ); // TODO switch
-		//add_action( 'gb_cron', array( get_class(), 'find_delayed_credits' ) );
+		//add_action( 'init', array( get_class(), 'find_delayed_credits' ) ); // TODO switch
+		add_action( 'gb_cron', array( get_class(), 'find_delayed_credits' ) );
 
 		// Merchant Options
 		add_filter( 'gb_deal_submission_fields', array( get_class(), 'filter_deal_submission_fields' ), 10, 1 );
