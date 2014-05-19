@@ -450,7 +450,7 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 			$payment = Group_Buying_Payment::get_instance( (int)$data['payment_id'] );
 			
 			if ( !is_a( $payment, 'Group_Buying_Payment' ) ) {
-				wp_delete_post( $record_id, TRUE );
+				//wp_delete_post( $record_id, TRUE );
 				return;
 			}
 
