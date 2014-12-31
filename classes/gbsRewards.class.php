@@ -708,7 +708,7 @@ class Group_Buying_Cashback_Rewards_Adv extends Group_Buying_Controller {
 	}
 
 	public function get_reward( Group_Buying_Deal $deal ) {
-		return $deal->get_post_meta( self::$meta_keys['reward'] );
+		return apply_filters( 'sec_deal_based_credit', $deal->get_post_meta( self::$meta_keys['reward'] ), $deal );
 	}
 	public function set_reward( Group_Buying_Deal $deal, $reward ) {
 		return $deal->save_post_meta( array( self::$meta_keys['reward'] => $reward ) );

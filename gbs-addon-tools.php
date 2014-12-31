@@ -22,9 +22,11 @@ if ( !function_exists('gbs_twmp_toolchain_load') ) { // play nice
 		require dirname(__FILE__).'/classes/gbsVoucher.class.php';
 		require dirname(__FILE__).'/classes/gbsRewards.class.php';
 		require dirname(__FILE__).'/classes/gbsCredits.class.php';
+
 		require dirname(__FILE__).'/classes/registrationFields.class.php';
 		require dirname(__FILE__).'/classes/GB_Merchant_Meta.class.php';
 		require dirname(__FILE__).'/classes/SEC_Report_Filtering.php';
+		require dirname(__FILE__).'/classes/Dynamic_Rewards.class.php';
 
 		require dirname(__FILE__).'/classes/library/template-tags.php';
 
@@ -33,7 +35,9 @@ if ( !function_exists('gbs_twmp_toolchain_load') ) { // play nice
 		GBS_Credits_Extension::init();
 		Group_Buying_Registration_Fields_Addon::init();
 		GB_Merchant_Meta_Addon::init();
+		
 		SEC_Report_Filtering_Addon::init();
+		SEC_Dynamic_Rewards_Addon::init();
 	}
 	add_action( 'group_buying_load', 'gbs_twmp_toolchain_load', 1000 ); // Attempt to load up the toolchain after the other plugins.
 }
