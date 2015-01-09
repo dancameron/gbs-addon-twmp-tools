@@ -33,7 +33,7 @@
 							<?php gb_currency_symbol(); ?><input type="text" name="dynamic_purchase_cost" id="dynamic_purchase_cost" class="tiny-text" size="5"/>
 						</td>
 						<td>
-							<input type="text" name="dynamic_purchase_reward" id="dynamic_purchase_reward" class="tiny-text" size="5"/><span class="dashicons dashicons-awards"></span>
+							&nbsp;
 						</td>
 						<td>
 							<a id="add_dyn_cost" class="add-dyn-cost button hide-if-no-js"><?php gb_e( 'Add' ); ?></a>

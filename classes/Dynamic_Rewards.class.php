@@ -97,7 +97,7 @@ class SEC_Dynamic_Rewards extends Group_Buying_Controller {
 			$offer = Group_Buying_Deal::get_instance( get_the_ID() );
 		}
 		if ( is_null( $qty ) ) {
-			$qty = self::get_number_of_purchases( $offer );
+			$qty = $offer->get_number_of_purchases();
 		}
 
 		$dynamic_rewards = self::get_dynamic_reward( $offer );
