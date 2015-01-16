@@ -93,7 +93,7 @@ class SEC_Dynamic_Rewards extends Group_Buying_Controller {
 	}
 
 	public static function get_reward( $qty = NULL, $offer = 0 ) {
-		if ( !$offer ) {
+		if ( !is_a( $offer, 'Group_Buying_Deal' ) ) {
 			$offer = Group_Buying_Deal::get_instance( get_the_ID() );
 		}
 		if ( is_null( $qty ) ) {
@@ -102,7 +102,7 @@ class SEC_Dynamic_Rewards extends Group_Buying_Controller {
 
 		$dynamic_rewards = self::get_dynamic_reward( $offer );
 		if ( 0 == $qty ) {
-			$reward = apply_filters( 'gb_tw_deal_reward', $dynamic_rewards, $offer, $qty );
+			$reward = apply_filters( 'gb_tw_deal_get_reward', 0, $offer, $qty );
 			return $reward;
 		}
 
@@ -133,9 +133,9 @@ class SEC_Dynamic_Rewards_Addon extends Group_Buying_Controller {
 	}
 
 	public static function load_addon( $addons ) {
-		$addons['dynamic_rewards'] = array(
-			'label' => self::__( 'Dynamic Rewards' ),
-			'description' => self::__( 'Give rewards based on dynamic rewards.' ),
+		$addons['cashback_dynamic_rewards'] = array(
+			'label' => self::__( 'Dynamic Cashback Rewards' ),
+			'description' => self::__( 'Set cashback rewards based on dynamic purchasing.' ),
 			'files' => array(
 				__FILE__,
 			),

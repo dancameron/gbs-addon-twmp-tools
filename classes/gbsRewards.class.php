@@ -84,8 +84,8 @@ class GB_Affiliates_Ext {
 		remove_action( 'gb_apply_credits', array( 'Group_Buying_Notifications', 'applied_credits' ) );
 		add_action( 'gb_apply_credits', array( get_class(), 'delay_credits' ), 10, 4 );
 
-		add_action( 'init', array( get_class(), 'find_delayed_credits' ) ); // TODO switch
-		//add_action( 'gb_cron', array( get_class(), 'find_delayed_credits' ) );
+		//add_action( 'init', array( get_class(), 'find_delayed_credits' ) ); // TODO switch
+		add_action( 'gb_cron', array( get_class(), 'find_delayed_credits' ) );
 	}
 
 	////////////////
@@ -187,7 +187,9 @@ class GB_Affiliates_Ext {
 					$user_id = $affiliate_account->get_user_id();
 					// if ( GBS_DEV ) error_log( "user id: " . print_r( $user_id, true ) );
 					// apply the credits but base it off Group_Buying_Deal_Rewards::get_product_credits again.
-					$credit += Group_Buying_Deal_Rewards::get_product_credits( $deal_id, $user_id, $affiliate_account, $purchaser_account, $set_current_time );
+					$offer = Group_Buying_Deal::get_instance( $deal_id );
+					$filtered_credit = apply_filters( 'sec_deal_based_credit', Group_Buying_Deal_Rewards::get_product_credits( $deal_id, $user_id, $affiliate_account, $purchaser_account, $set_current_time ), $offer );
+					$credit += $filtered_credit;
 					// if ( GBS_DEV ) error_log( "active voucher credits: " . print_r( $credit, true ) );
 				} else { // fallback in case Deal Based Rewards is not active.
 					$credit = $applied_credits; // this will be set multiple times but be the same.
