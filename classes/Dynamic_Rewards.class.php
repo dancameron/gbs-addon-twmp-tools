@@ -18,7 +18,7 @@ class SEC_Dynamic_Rewards extends Group_Buying_Controller {
 	}
 
 	public static function deal_based_credit( $credit, $offer ) {
-		$reward = self::get_reward( null, $offer );
+		$reward = self::get_reward( null, $offer, $credit );
 		if ( is_numeric( $reward ) ) {
 			return $reward;
 		}
@@ -92,7 +92,7 @@ class SEC_Dynamic_Rewards extends Group_Buying_Controller {
 		return (array)$dynamic_reward;
 	}
 
-	public static function get_reward( $qty = NULL, $offer = 0 ) {
+	public static function get_reward( $qty = NULL, $offer = 0, $original_credit = 0 ) {
 		if ( !is_a( $offer, 'Group_Buying_Deal' ) ) {
 			$offer = Group_Buying_Deal::get_instance( get_the_ID() );
 		}
@@ -102,7 +102,7 @@ class SEC_Dynamic_Rewards extends Group_Buying_Controller {
 
 		$dynamic_rewards = self::get_dynamic_reward( $offer );
 		if ( 0 == $qty ) {
-			$reward = apply_filters( 'gb_tw_deal_get_reward', 0, $offer, $qty );
+			$reward = apply_filters( 'gb_tw_deal_get_reward', $original_credit, $offer, $qty );
 			return $reward;
 		}
 

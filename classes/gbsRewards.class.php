@@ -84,8 +84,8 @@ class GB_Affiliates_Ext {
 		remove_action( 'gb_apply_credits', array( 'Group_Buying_Notifications', 'applied_credits' ) );
 		add_action( 'gb_apply_credits', array( get_class(), 'delay_credits' ), 10, 4 );
 
-		//add_action( 'init', array( get_class(), 'find_delayed_credits' ) ); // TODO switch
-		add_action( 'gb_cron', array( get_class(), 'find_delayed_credits' ) );
+		add_action( 'init', array( get_class(), 'find_delayed_credits' ) ); // TODO switch
+		//add_action( 'gb_cron', array( get_class(), 'find_delayed_credits' ) );
 	}
 
 	////////////////
