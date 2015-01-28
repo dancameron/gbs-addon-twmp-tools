@@ -52,6 +52,7 @@ class SEC_Dynamic_Rewards extends Group_Buying_Controller {
 		// save all the meta boxes
 		$offer = Group_Buying_Deal::get_instance( $post_id );
 
+		$rewards = array();
 		if ( isset( $_POST['deal_dynamic_reward'] ) ) {
 			if ( is_numeric( $_POST['deal_dynamic_reward'] ) ) {
 				$rewards[0] = $_POST['deal_dynamic_reward'];
@@ -63,12 +64,15 @@ class SEC_Dynamic_Rewards extends Group_Buying_Controller {
 				}
 			}
 		}
+		if ( empty($rewards) ) {
+			return;
+		}
 		ksort( $rewards );
 		self::set_rewards( $rewards, $offer );
 
 	}
 
-	public function set_rewards( $rewards, $offer ) {
+	public function set_rewards( $rewards = array(), $offer ) {
 		$base = 0;
 		$dynamic = array();
 		foreach ( $rewards as $qty => $reward ) {
