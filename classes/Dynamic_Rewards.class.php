@@ -110,6 +110,7 @@ class SEC_Dynamic_Rewards extends Group_Buying_Controller {
 			return $reward;
 		}
 
+		$reward = $original_credit;
 		$max_qty_found = 0;
 		if ( !empty( $dynamic_rewards ) ) {
 			foreach ( $dynamic_rewards as $qty_required => $new_reward ) {
