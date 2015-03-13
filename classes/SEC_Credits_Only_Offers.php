@@ -1,0 +1,206 @@
+<?php
+
+/**
+* Dynamic Rewards
+*/
+class SEC_Credits_Only_Offers extends Group_Buying_Controller {
+	const TAX = 'sec_credit_purchase_only';
+	const TERM = 'credit-purchase-only';
+
+	public static function init() {
+		// Meta Boxes
+		add_action( 'add_meta_boxes', array(get_class(), 'add_meta_boxes'));
+		add_action( 'save_post', array( get_class(), 'save_meta_boxes' ), 10, 2 );
+
+		// modify cart
+		add_action( 'gb_cart_get_items', array( get_class(), 'maybe_adjust_cart_items' ), 100, 2 );
+
+		// Adjust checkout options
+		add_filter( 'gb_payment_fields', array( get_class(), 'payment_fields' ), 10, 3 );
+
+		// Can purchase
+		add_filter( 'account_can_purchase', array( get_class(), 'can_purchase_pod' ), 500, 2 );
+
+	}
+
+	public function can_purchase_pod( $qty, $offer_id ) {
+		$deal = Group_Buying_Deal::get_instance( $offer_id );
+		if ( self::is_pod( $deal ) ) {
+			$account = SEC_Account::get_instance();
+			$reward_balance = $account->get_credit_balance( SEC_Affiliates::CREDIT_TYPE )/Group_Buying_Payment_Processors::get_credit_exchange_rate( SEC_Affiliates::CREDIT_TYPE );
+			if ( $reward_balance < $deal->get_price( $qty ) ) {
+				return FALSE;
+			}
+		}
+		return $qty;
+	}
+
+	////////////////////////
+	// Cart Manipulation //
+	////////////////////////
+
+	public static function maybe_adjust_cart_items( $products, Group_Buying_Cart $cart ) {
+		$pods = array();
+		$has_non_pod = FALSE;
+		foreach ( $products as $key => $product ) {
+			$deal = Group_Buying_Deal::get_instance( $product['deal_id'] );
+			if ( !self::is_pod( $deal ) ) {
+				$has_non_pod = TRUE;
+			}
+			else {
+				$pods[] = $key;
+			}
+		}
+		// Check if cart is mixed
+		if ( !empty( $pods ) && $has_non_pod ) {
+			foreach ( $products as $key => $product ) {
+				$deal = Group_Buying_Deal::get_instance( $product['deal_id'] );
+				if ( self::is_pod( $deal ) ) {
+					self::set_message( sprintf( '%s was removed since it can only be purchased with credits.', $deal->get_title() ) );
+					unset( $products[$key] );
+					$cart->remove_item( $product['deal_id'], $product['data'] );
+				}
+			}
+		}
+		return $products;
+	}
+
+
+	public function payment_fields( $fields, $payment_processor_class, $checkout ) {
+		if ( self::cart_have_pod() ) {
+			unset( $fields['payment_method'] );
+			unset( $fields['account_balance'] );
+		}
+		return $fields;
+	}
+
+	public static function cart_have_pod() {
+		$cart = SEC_Cart::get_instance();
+		foreach ( $cart->get_products() as $key => $product ) {
+			$deal = Group_Buying_Deal::get_instance( $product['deal_id'] );
+			if ( self::is_pod( $deal ) ) {
+				return TRUE;
+			}
+		}
+		return FALSE;
+
+	}
+
+	/////////////////
+	// Meta boxes //
+	/////////////////
+
+	public static function add_meta_boxes() {
+		add_meta_box( 'sec_pod', self::__('Pay by Credits Only'), array( get_class(), 'show_meta_boxes' ), Group_Buying_Deal::POST_TYPE, 'side' );
+	}
+
+	public static function show_meta_boxes( $post, $metabox ) {
+		$deal = Group_Buying_Deal::get_instance($post->ID);
+		switch ( $metabox['id'] ) {
+			case 'sec_pod':
+				self::show_meta_box($deal, $post, $metabox);
+				break;
+			default:
+				self::unknown_meta_box($metabox['id']);
+				break;
+		}
+	}
+
+	private static function show_meta_box( Group_Buying_Deal $deal, $post, $metabox ) {
+		$pod = self::is_pod($deal);
+		include('views/pod_metabox.php');
+	}
+	
+	public static function save_meta_boxes( $post_id, $post ) {
+		// only continue if it's an account post
+		if ( $post->post_type != Group_Buying_Deal::POST_TYPE ) {
+			return;
+		}
+		// don't do anything on autosave, auto-draft, bulk edit, or quick edit
+		if ( wp_is_post_autosave( $post_id ) || $post->post_status == 'auto-draft' || defined('DOING_AJAX') || isset($_GET['bulk_edit']) ) {
+			return;
+		}
+		// save all the meta boxes
+		$deal = Group_Buying_Deal::get_instance($post_id);
+		if ( !is_a($deal, 'Group_Buying_Deal') ) {
+			return; // The account doesn't exist
+		}
+		self::save_meta_box($deal, $post_id, $post);
+	}
+
+	private static function save_meta_box( Group_Buying_Deal $deal, $post_id, $post ) {
+		$terms = ( isset( $_POST['gb_pod'] ) && $_POST['gb_pod'] == '1' ) ? self::get_term_slug() : null;
+		wp_set_object_terms( $post_id, $terms, self::TAX );
+	}
+
+	//////////////
+	// Utility //
+	//////////////
+
+	public static function get_term_slug() {
+		$term = get_term_by( 'slug', self::TERM, self::TAX );
+		if ( !empty($term->slug) ) {
+			return $term->slug;
+		} else {
+			$return = wp_insert_term(
+				self::TERM, // the term 
+				self::TAX, // the taxonomy
+					array(
+						'description'=> 'This is a credit purchase only deal.',
+						'slug' => self::TERM, )
+				);
+			return $return['slug'];
+		}
+
+	}
+
+	public static function is_pod( Group_Buying_Deal $deal ) {
+		$post_id = $deal->get_ID();
+		$term = array_pop( wp_get_object_terms( $post_id, self::TAX ) );
+		$pod = FALSE;
+		if ( !empty($term) && $term->slug = self::get_term_slug() ) {
+			$pod = TRUE;
+		}
+		return $pod;
+	}
+
+}
+class SEC_Credits_Only_Offer extends Group_Buying_Deal {
+
+	public static function init() {
+		// register Locations taxonomy
+		$singular = 'COP';
+		$plural = 'COPS';
+		$taxonomy_args = array(
+			'hierarchical' => TRUE,
+			'public' => FALSE,
+			'show_ui' => FALSE
+		);
+		self::register_taxonomy( SEC_Credits_Only_Offers::TAX, array( Group_Buying_Deal::POST_TYPE ), $singular, $plural, $taxonomy_args );
+	}
+}
+
+
+// Initiate the add-on
+class SEC_Credits_Only_Offers_Addon extends Group_Buying_Controller {
+
+	public static function init() {
+		// Hook this plugin into the GBS add-ons controller
+		add_filter( 'gb_addons', array( get_class(), 'load_addon' ), 10, 1 );
+	}
+
+	public static function load_addon( $addons ) {
+		$addons['pay_by_credit_offers'] = array(
+			'label' => self::__( 'Pay by Credit Only Offers' ),
+			'description' => self::__( 'Set an offer to only be purchasable by rewards. An offer with this selection cannot be purchased with any other offer; it will be removed from a cart with any other non pay by credit only offer. It will also not be eligible to purchase if the user does not have enough rewards.' ),
+			'files' => array(
+				__FILE__,
+			),
+			'callbacks' => array(
+				array( 'SEC_Credits_Only_Offer', 'init' ),
+				array( 'SEC_Credits_Only_Offers', 'init' ),
+			),
+		);
+		return $addons;
+	}
+}

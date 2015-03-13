@@ -27,6 +27,7 @@ if ( !function_exists('gbs_twmp_toolchain_load') ) { // play nice
 		require dirname(__FILE__).'/classes/GB_Merchant_Meta.class.php';
 		require dirname(__FILE__).'/classes/SEC_Report_Filtering.php';
 		require dirname(__FILE__).'/classes/Dynamic_Rewards.class.php';
+		require dirname(__FILE__).'/classes/SEC_Credits_Only_Offers.php';
 
 		require dirname(__FILE__).'/classes/library/template-tags.php';
 
@@ -38,6 +39,7 @@ if ( !function_exists('gbs_twmp_toolchain_load') ) { // play nice
 		
 		SEC_Report_Filtering_Addon::init();
 		SEC_Dynamic_Rewards_Addon::init();
+		SEC_Credits_Only_Offers_Addon::init();
 	}
 	add_action( 'group_buying_load', 'gbs_twmp_toolchain_load', 1000 ); // Attempt to load up the toolchain after the other plugins.
 }
