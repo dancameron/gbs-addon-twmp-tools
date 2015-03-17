@@ -26,8 +26,8 @@ class SEC_Credits_Only_Offers extends Group_Buying_Controller {
 	public function can_purchase_pod( $qty, $offer_id ) {
 		$deal = Group_Buying_Deal::get_instance( $offer_id );
 		if ( self::is_pod( $deal ) ) {
-			$account = SEC_Account::get_instance();
-			$reward_balance = $account->get_credit_balance( SEC_Affiliates::CREDIT_TYPE )/Group_Buying_Payment_Processors::get_credit_exchange_rate( SEC_Affiliates::CREDIT_TYPE );
+			$account = Group_Buying_Account::get_instance();
+			$reward_balance = $account->get_credit_balance( Group_Buying_Affiliates::CREDIT_TYPE )/Group_Buying_Payment_Processors::get_credit_exchange_rate( Group_Buying_Affiliates::CREDIT_TYPE );
 			if ( $reward_balance < $deal->get_price( $qty ) ) {
 				return FALSE;
 			}
@@ -44,11 +44,13 @@ class SEC_Credits_Only_Offers extends Group_Buying_Controller {
 		$has_non_pod = FALSE;
 		foreach ( $products as $key => $product ) {
 			$deal = Group_Buying_Deal::get_instance( $product['deal_id'] );
-			if ( !self::is_pod( $deal ) ) {
-				$has_non_pod = TRUE;
-			}
-			else {
-				$pods[] = $key;
+			if ( is_a( $deal, 'Group_Buying_Deal' ) ) {
+				if ( !self::is_pod( $deal ) ) {
+					$has_non_pod = TRUE;
+				}
+				else {
+					$pods[] = $key;
+				}
 			}
 		}
 		// Check if cart is mixed
@@ -75,7 +77,7 @@ class SEC_Credits_Only_Offers extends Group_Buying_Controller {
 	}
 
 	public static function cart_have_pod() {
-		$cart = SEC_Cart::get_instance();
+		$cart = Group_Buying_Cart::get_instance();
 		foreach ( $cart->get_products() as $key => $product ) {
 			$deal = Group_Buying_Deal::get_instance( $product['deal_id'] );
 			if ( self::is_pod( $deal ) ) {
@@ -156,7 +158,8 @@ class SEC_Credits_Only_Offers extends Group_Buying_Controller {
 
 	public static function is_pod( Group_Buying_Deal $deal ) {
 		$post_id = $deal->get_ID();
-		$term = array_pop( wp_get_object_terms( $post_id, self::TAX ) );
+		$terms = wp_get_object_terms( $post_id, self::TAX );
+		$term = array_pop( $terms );
 		$pod = FALSE;
 		if ( !empty($term) && $term->slug = self::get_term_slug() ) {
 			$pod = TRUE;
