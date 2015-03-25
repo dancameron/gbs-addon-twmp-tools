@@ -24,9 +24,6 @@ class SEC_Credits_Only_Offers extends Group_Buying_Controller {
 	}
 
 	public function can_purchase_pod( $qty, $offer_id ) {
-		if ( !is_user_logged_in() ) {
-			return $qty;
-		}
 		$deal = Group_Buying_Deal::get_instance( $offer_id );
 		if ( self::is_pod( $deal ) ) {
 			$account = Group_Buying_Account::get_instance();
