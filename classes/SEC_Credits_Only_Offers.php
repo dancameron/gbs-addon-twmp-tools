@@ -58,7 +58,7 @@ class SEC_Credits_Only_Offers extends Group_Buying_Controller {
 			foreach ( $products as $key => $product ) {
 				$deal = Group_Buying_Deal::get_instance( $product['deal_id'] );
 				if ( self::is_pod( $deal ) ) {
-					self::set_message( sprintf( '%s was removed since it can only be purchased with credits.', $deal->get_title() ) );
+					self::set_message( sprintf( '<a href="%s">%s</a> was removed since it can only be purchased with credits.', get_permalink( $product['deal_id'] ), $deal->get_title() ) );
 					unset( $products[$key] );
 					$cart->remove_item( $product['deal_id'], $product['data'] );
 				}

@@ -20,3 +20,11 @@ function gb_get_featured_merchant_url() {
 			echo apply_filters('gb_featured_merchant_url',$url);
 		}
 	}
+
+function sec_can_only_be_purchased_with_rewards( $offer_id = 0 ) {
+	if ( !$offer_id ) {
+		$offer_id = get_the_ID();
+	}
+	$offer = Group_Buying_Deal::get_instance( $offer_id );
+	return SEC_Credits_Only_Offers::is_pod( $offer );
+}
