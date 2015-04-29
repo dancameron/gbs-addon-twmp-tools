@@ -277,17 +277,52 @@ class SEC_Report_Filtering extends Group_Buying_Controller {
 	public static function filter_where( $where = '' ) {
 		// posts in the last 30 days
 		if ( isset( $_GET['action'] ) && 'filter' === $_GET['action'] ){
-			if ( ! empty($_GET['fromdate']) ) {
-				$fromdate			= $_GET['fromdate'];
-				$fromdate_arr		= explode( '-',$fromdate );
-				$fromdate_mktime	= mktime( 0,0,0,$fromdate_arr[1],$fromdate_arr[0],$fromdate_arr[2] );
-				$where .= " AND post_date >= '" . date( 'Y-m-d H:i:s', $fromdate_mktime ) . "'";
+			$fromtime = 0;
+			$fromtime = 0;
+			if ( isset( $_GET['fromdate'] ) ) {
+				$fromdate_arr = explode( '-', $_GET['fromdate'] );
+				$fromtime = mktime( 0, 0, 0, $fromdate_arr[1], $fromdate_arr[0], $fromdate_arr[2] );
 			}
-			if ( ! empty($_GET['todate']) ) {
-				$todate			= $_GET['todate'];
-				$todate_arr		= explode( '-',$todate );
-				$todate_mktime	= mktime( 23,59,59,$todate_arr[1],$todate_arr[0],$todate_arr[2] );
-				$where .= " AND post_date <= '" . date( 'Y-m-d H:i:s', $todate_mktime ) . "'";
+			if ( isset( $_GET['todate'] ) ) {
+				$todate_arr		= explode( '-', $_GET['todate'] );
+				$totime	= mktime( 23, 59, 59, $todate_arr[1], $todate_arr[0], $todate_arr[2] );
+			}
+
+			if ( isset( $_GET['pre_filter'] ) ) {
+				switch ( $_GET['pre_filter'] ) {
+					case 'today':
+						$fromtime = strtotime( 'midnight' );
+						$totime = strtotime( 'tomorrow' )-1;
+						break;
+					case 'last_7days':
+						$fromtime = strtotime( '7 days ago' );
+						$totime = strtotime( 'tomorrow' )-1;
+						break;
+					case 'this_week':
+						$fromtime = strtotime( 'monday this week' );
+						$totime = strtotime( 'sunday this week' );
+						break;
+					case 'last_week':
+						$fromtime = strtotime( 'monday last week' );
+						$totime = strtotime( 'sunday last week' );
+						break;
+					case 'this_month':
+						$fromtime = mktime( 0, 0, 0, date( 'm' ), 1, date( 'Y' ) );
+						$totime = mktime( 0, 0, 0, date( 'm' ), date( 't' ), date( 'Y' ) );
+					case 'last_month':
+						$fromtime = strtotime( 'first day of last month' );
+						$totime = strtotime( 'last day of last month' );
+						break;
+					
+					default:
+						break;
+				}
+			}
+			if ( $fromtime ) {
+				$where .= " AND post_date >= '" . date( 'Y-m-d H:i:s', $fromtime ) . "'";
+			}
+			if ( $totime ) {
+				$where .= " AND post_date <= '" . date( 'Y-m-d H:i:s', $totime ) . "'";
 			}
 		}
 		return $where;
