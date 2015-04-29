@@ -12,6 +12,10 @@ Contributors: Dan Cameron
 Text Domain: group-buying
 */
 
+
+define( 'GB_TWMP_TOOLS_PATH', WP_PLUGIN_DIR . '/' . basename( dirname( __FILE__ ) ) . '/' );
+define( 'GB_TWMP_TOOLS_URL', plugins_url( '', __FILE__ ) );
+
 /**
  * Load all the plugin files and initialize appropriately
  *
