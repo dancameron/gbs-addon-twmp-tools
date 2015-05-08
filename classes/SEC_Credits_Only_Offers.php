@@ -69,6 +69,7 @@ class SEC_Credits_Only_Offers extends Group_Buying_Controller {
 		$price_of_pods_in_cart = self::cart_have_pod();
 		if ( $price_of_pods_in_cart > 0.00 ) {
 			// check if the user has enough rewards
+			$account = Group_Buying_Account::get_instance();
 			$reward_balance = $account->get_credit_balance( Group_Buying_Affiliates::CREDIT_TYPE )/Group_Buying_Payment_Processors::get_credit_exchange_rate( Group_Buying_Affiliates::CREDIT_TYPE );
 			foreach ( $products as $key => $product ) {
 				$deal = Group_Buying_Deal::get_instance( $product['deal_id'] );
