@@ -9,7 +9,7 @@ class SEC_Credits_Only_Offers extends Group_Buying_Controller {
 
 	public static function init() {
 		// Meta Boxes
-		add_action( 'add_meta_boxes', array(get_class(), 'add_meta_boxes'));
+		add_action( 'add_meta_boxes', array(get_class(), 'add_meta_boxes') );
 		add_action( 'save_post', array( get_class(), 'save_meta_boxes' ), 10, 2 );
 
 		// modify cart
@@ -28,18 +28,21 @@ class SEC_Credits_Only_Offers extends Group_Buying_Controller {
 		if ( self::is_pod( $deal ) ) {
 			$offer_price = $deal->get_price( $qty );
 			$account = Group_Buying_Account::get_instance();
-			$reward_balance = $account->get_credit_balance( Group_Buying_Affiliates::CREDIT_TYPE )/Group_Buying_Payment_Processors::get_credit_exchange_rate( Group_Buying_Affiliates::CREDIT_TYPE );
-			// basic check to see if the price is more than the balance
+			$reward_balance = $account->get_credit_balance( Group_Buying_Affiliates::CREDIT_TYPE ) / Group_Buying_Payment_Processors::get_credit_exchange_rate( Group_Buying_Affiliates::CREDIT_TYPE );
 			if ( $reward_balance < $offer_price ) {
-				return FALSE;
+				if ( $reward_balance < $deal->get_price( 1 ) ) {
+					return false;
+				}
+				$qty = 1;
 			}
+
 			// check to see if the cart has pods
-			$price_of_pods_in_cart = self::cart_have_pod();
-			if ( $price_of_pods_in_cart > 0.00 ) {
+			$price_of_other_pods_in_cart = self::cart_have_pod( $offer_id );
+			if ( $price_of_other_pods_in_cart > 0.00 ) {
 				// deduct what is in the cart with their balance to prevent add-to-cart
-				$reward_balance = $reward_balance-$price_of_pods_in_cart;
+				$reward_balance = $reward_balance - $price_of_other_pods_in_cart;
 				if ( $reward_balance < $offer_price ) {
-					return FALSE;
+					return false;
 				}
 			}
 		}
@@ -52,12 +55,12 @@ class SEC_Credits_Only_Offers extends Group_Buying_Controller {
 
 	public static function maybe_adjust_cart_items( $products, Group_Buying_Cart $cart ) {
 		$pods = array();
-		$has_non_pod = FALSE;
+		$has_non_pod = false;
 		foreach ( $products as $key => $product ) {
 			$deal = Group_Buying_Deal::get_instance( $product['deal_id'] );
 			if ( is_a( $deal, 'Group_Buying_Deal' ) ) {
-				if ( !self::is_pod( $deal ) ) {
-					$has_non_pod = TRUE;
+				if ( ! self::is_pod( $deal ) ) {
+					$has_non_pod = true;
 				}
 				else {
 					$pods[] = $key;
@@ -70,7 +73,7 @@ class SEC_Credits_Only_Offers extends Group_Buying_Controller {
 		if ( $price_of_pods_in_cart > 0.00 ) {
 			// check if the user has enough rewards
 			$account = Group_Buying_Account::get_instance();
-			$reward_balance = $account->get_credit_balance( Group_Buying_Affiliates::CREDIT_TYPE )/Group_Buying_Payment_Processors::get_credit_exchange_rate( Group_Buying_Affiliates::CREDIT_TYPE );
+			$reward_balance = $account->get_credit_balance( Group_Buying_Affiliates::CREDIT_TYPE ) / Group_Buying_Payment_Processors::get_credit_exchange_rate( Group_Buying_Affiliates::CREDIT_TYPE );
 			foreach ( $products as $key => $product ) {
 				$deal = Group_Buying_Deal::get_instance( $product['deal_id'] );
 				if ( self::is_pod( $deal ) ) {
@@ -78,24 +81,24 @@ class SEC_Credits_Only_Offers extends Group_Buying_Controller {
 					// balance doesn't have enough for this offer.
 					if ( $reward_balance < $offer_price ) {
 						self::set_message( sprintf( '<a href="%s">%s</a> was removed since it can only be purchased with credits.', get_permalink( $product['deal_id'] ), $deal->get_title() ) );
-						unset( $products[$key] );
+						unset( $products[ $key ] );
 						$cart->remove_item( $product['deal_id'], $product['data'] );
 						// since it's removed there isn't a price to deduct later.
 						$offer_price = 0;
 					}
 					// run a tally.
-					$reward_balance = $reward_balance-$offer_price;
+					$reward_balance = $reward_balance - $offer_price;
 				}
 			}
 		}
 
 		// Check if cart is mixed
-		if ( !empty( $pods ) && $has_non_pod ) {
+		if ( ! empty( $pods ) && $has_non_pod ) {
 			foreach ( $products as $key => $product ) {
 				$deal = Group_Buying_Deal::get_instance( $product['deal_id'] );
 				if ( self::is_pod( $deal ) ) {
 					self::set_message( sprintf( '<a href="%s">%s</a> was removed since it can only be purchased with credits.', get_permalink( $product['deal_id'] ), $deal->get_title() ) );
-					unset( $products[$key] );
+					unset( $products[ $key ] );
 					$cart->remove_item( $product['deal_id'], $product['data'] );
 				}
 			}
@@ -112,17 +115,19 @@ class SEC_Credits_Only_Offers extends Group_Buying_Controller {
 		return $fields;
 	}
 
-	public static function cart_have_pod() {
+	public static function cart_have_pod( $offer_to_ignore = 0 ) {
 		$price_of_pods_in_cart = (float) 0;
 		$cart = Group_Buying_Cart::get_instance();
 		foreach ( $cart->get_products() as $key => $product ) {
+			if ( (int) $offer_to_ignore === (int) $product['deal_id'] ) {
+				continue;
+			}
 			$deal = Group_Buying_Deal::get_instance( $product['deal_id'] );
 			if ( self::is_pod( $deal ) ) {
 				$price_of_pods_in_cart += $deal->get_price();
 			}
 		}
 		return $price_of_pods_in_cart;
-
 	}
 
 	/////////////////
@@ -130,41 +135,41 @@ class SEC_Credits_Only_Offers extends Group_Buying_Controller {
 	/////////////////
 
 	public static function add_meta_boxes() {
-		add_meta_box( 'sec_pod', self::__('Pay by Credits Only'), array( get_class(), 'show_meta_boxes' ), Group_Buying_Deal::POST_TYPE, 'side' );
+		add_meta_box( 'sec_pod', self::__( 'Pay by Credits Only' ), array( get_class(), 'show_meta_boxes' ), Group_Buying_Deal::POST_TYPE, 'side' );
 	}
 
 	public static function show_meta_boxes( $post, $metabox ) {
-		$deal = Group_Buying_Deal::get_instance($post->ID);
+		$deal = Group_Buying_Deal::get_instance( $post->ID );
 		switch ( $metabox['id'] ) {
 			case 'sec_pod':
-				self::show_meta_box($deal, $post, $metabox);
+				self::show_meta_box( $deal, $post, $metabox );
 				break;
 			default:
-				self::unknown_meta_box($metabox['id']);
+				self::unknown_meta_box( $metabox['id'] );
 				break;
 		}
 	}
 
 	private static function show_meta_box( Group_Buying_Deal $deal, $post, $metabox ) {
-		$pod = self::is_pod($deal);
+		$pod = self::is_pod( $deal );
 		include('views/pod_metabox.php');
 	}
-	
+
 	public static function save_meta_boxes( $post_id, $post ) {
 		// only continue if it's an account post
 		if ( $post->post_type != Group_Buying_Deal::POST_TYPE ) {
 			return;
 		}
 		// don't do anything on autosave, auto-draft, bulk edit, or quick edit
-		if ( wp_is_post_autosave( $post_id ) || $post->post_status == 'auto-draft' || defined('DOING_AJAX') || isset($_GET['bulk_edit']) ) {
+		if ( wp_is_post_autosave( $post_id ) || $post->post_status == 'auto-draft' || defined( 'DOING_AJAX' ) || isset($_GET['bulk_edit']) ) {
 			return;
 		}
 		// save all the meta boxes
-		$deal = Group_Buying_Deal::get_instance($post_id);
-		if ( !is_a($deal, 'Group_Buying_Deal') ) {
+		$deal = Group_Buying_Deal::get_instance( $post_id );
+		if ( ! is_a( $deal, 'Group_Buying_Deal' ) ) {
 			return; // The account doesn't exist
 		}
-		self::save_meta_box($deal, $post_id, $post);
+		self::save_meta_box( $deal, $post_id, $post );
 	}
 
 	private static function save_meta_box( Group_Buying_Deal $deal, $post_id, $post ) {
@@ -178,16 +183,16 @@ class SEC_Credits_Only_Offers extends Group_Buying_Controller {
 
 	public static function get_term_slug() {
 		$term = get_term_by( 'slug', self::TERM, self::TAX );
-		if ( !empty($term->slug) ) {
+		if ( ! empty($term->slug) ) {
 			return $term->slug;
 		} else {
 			$return = wp_insert_term(
-				self::TERM, // the term 
+				self::TERM, // the term
 				self::TAX, // the taxonomy
-					array(
-						'description'=> 'This is a credit purchase only deal.',
+				array(
+						'description' => 'This is a credit purchase only deal.',
 						'slug' => self::TERM, )
-				);
+			);
 			return $return['slug'];
 		}
 
@@ -197,9 +202,9 @@ class SEC_Credits_Only_Offers extends Group_Buying_Controller {
 		$post_id = $deal->get_ID();
 		$terms = wp_get_object_terms( $post_id, self::TAX );
 		$term = array_pop( $terms );
-		$pod = FALSE;
-		if ( !empty($term) && $term->slug = self::get_term_slug() ) {
-			$pod = TRUE;
+		$pod = false;
+		if ( ! empty($term) && $term->slug = self::get_term_slug() ) {
+			$pod = true;
 		}
 		return $pod;
 	}
@@ -212,9 +217,9 @@ class SEC_Credits_Only_Offer extends Group_Buying_Deal {
 		$singular = 'COP';
 		$plural = 'COPS';
 		$taxonomy_args = array(
-			'hierarchical' => TRUE,
-			'public' => FALSE,
-			'show_ui' => FALSE
+			'hierarchical' => true,
+			'public' => false,
+			'show_ui' => false
 		);
 		self::register_taxonomy( SEC_Credits_Only_Offers::TAX, array( Group_Buying_Deal::POST_TYPE ), $singular, $plural, $taxonomy_args );
 	}
