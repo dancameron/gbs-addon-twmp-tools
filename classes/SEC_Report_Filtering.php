@@ -4,7 +4,7 @@ class SEC_Report_Filtering extends Group_Buying_Controller {
 
 	public static function init() {
 		// Add date filter to reports
-		add_action( 'gb_report_view_table_start', array( get_class(), 'date_filter_form_table' ) );
+		add_action( 'gb_report_view', array( get_class(), 'date_filter_form_table' ), 10, 1000 );
 		add_action( 'wp_head', array( get_class(), 'register_scripts' ) );
 
 		// Filter voucher report
@@ -28,7 +28,8 @@ class SEC_Report_Filtering extends Group_Buying_Controller {
 
 	public static function register_scripts() {
 		if ( isset( $_GET['report'] ) && 'merchant_purchases' === $_GET['report'] ) {
-			wp_enqueue_script( 'jquery-ui-datepicker' );
+			wp_enqueue_script( 'gb_timepicker' );
+			wp_enqueue_style( 'gb_frontend_jquery_ui_style' );
 			wp_enqueue_script( 'filter_report', GB_TWMP_TOOLS_URL . '/classes/resources/js/filterreport.js' );
 			wp_enqueue_style( 'filter_report', GB_TWMP_TOOLS_URL . '/classes/resources/css/filterreport.css' );
 		}
@@ -163,6 +164,40 @@ class SEC_Report_Filtering extends Group_Buying_Controller {
 	public function set_merchant_purchases_report_data_custom() {
 		$filter = ( isset( $_GET['filter'] ) && in_array( $_GET['filter'], array( 'any', 'publish', 'draft', 'private', 'trash' ) ) ) ? $_GET['filter'] : 'publish';
 
+		$start_time = ( isset( $_REQUEST['reports_start_date'] ) && strtotime( $_REQUEST['reports_start_date'] ) <= current_time( 'timestamp' ) ) ? strtotime( $_REQUEST['reports_start_date'] ) : current_time( 'timestamp' )-604800;
+  		$end_time = ( isset( $_REQUEST['reports_end_date'] ) && strtotime( $_REQUEST['reports_end_date'] ) <= current_time( 'timestamp' ) ) ? strtotime( $_REQUEST['reports_end_date'] ) : current_time( 'timestamp' );
+
+  		if ( isset( $_REQUEST['pre_filter'] ) ) {
+			switch ( $_REQUEST['pre_filter'] ) {
+				case 'today':
+					$start_time = strtotime( 'midnight' );
+					$end_time = strtotime( 'tomorrow' )-1;
+					break;
+				case 'last_7days':
+					$start_time = strtotime( '7 days ago' );
+					$end_time = strtotime( 'tomorrow' )-1;
+					break;
+				case 'this_week':
+					$start_time = strtotime( 'monday this week' );
+					$end_time = strtotime( 'sunday this week' );
+					break;
+				case 'last_week':
+					$start_time = strtotime( 'monday last week' );
+					$end_time = strtotime( 'sunday last week' );
+					break;
+				case 'this_month':
+					$start_time = mktime( 0, 0, 0, date( 'm' ), 1, date( 'Y' ) );
+					$end_time = mktime( 0, 0, 0, date( 'm' ), date( 't' ), date( 'Y' ) );
+				case 'last_month':
+					$start_time = strtotime( 'first day of last month' );
+					$end_time = strtotime( 'last day of last month' );
+					break;
+				
+				default:
+					break;
+			}
+		}
+
 		$showpage = ( isset( $_GET['showpage'] ) ) ? (int)$_GET['showpage'] : 0 ;
 		$args = array(
 				'post_type' => Group_Buying_Purchase::POST_TYPE,
@@ -172,10 +207,15 @@ class SEC_Report_Filtering extends Group_Buying_Controller {
 				'paged' => $showpage,
 				'orderby' => 'date',
 				'order' => 'desc',
+				'date_query' => array(
+							array(
+								'after'     => date( 'm/d/Y', $start_time ),
+								'before'    => date( 'm/d/Y', $end_time+86400 ), // Add a day since it will nto count the date selected otherwise.
+								'inclusive' => true,
+							),
+						),
 			);
-		add_filter( 'posts_where', array( get_class(), 'filter_where' ) );
 		$merch_purchases = new WP_Query( $args );
-		remove_filter( 'posts_where', array( get_class(), 'filter_where' ) );
 
 		$gb_report_pages = $merch_purchases->max_num_pages; // set the global for later pagination
 		$purchase_array = array();
@@ -219,11 +259,11 @@ class SEC_Report_Filtering extends Group_Buying_Controller {
 						$deals		.= "$deal_name <br><br>";
 						$quanties	.= "$qty <br><br>";
 						$offsite_purcahse	+= $product['payment_method']['Off-site Purchase'];
-						if ( isset( $product['payment_method']['Account Credit (Affiliate)'] ) ) {
-							$purchase_credit += $product['payment_method']['Account Credit (Affiliate)'];
+						if ( isset( $product['payment_method'][Group_Buying_Account_Balance_Payments::PAYMENT_METHOD] ) ) {
+							$purchase_credit += $product['payment_method'][Group_Buying_Account_Balance_Payments::PAYMENT_METHOD];
 						}
-						if ( isset( $product['payment_method']['Account Credit (Affiliate)'] ) ) {
-							$purchase_credit	+= $product['payment_method']['Account Credit (Affiliate)'];
+						if ( isset( $product['payment_method'][Group_Buying_Affiliate_Credit_Payments::PAYMENT_METHOD] ) ) {
+							$purchase_credit	+= $product['payment_method'][Group_Buying_Affiliate_Credit_Payments::PAYMENT_METHOD];
 						}
 					}
 				}
@@ -272,60 +312,6 @@ class SEC_Report_Filtering extends Group_Buying_Controller {
 
 		$purchase_array = apply_filters( 'set_merchant_voucher_report_data_record_custom', $purchase_array );
 		return $purchase_array;
-	}
-
-	public static function filter_where( $where = '' ) {
-		// posts in the last 30 days
-		if ( isset( $_GET['action'] ) && 'filter' === $_GET['action'] ){
-			$fromtime = 0;
-			$fromtime = 0;
-			if ( isset( $_GET['fromdate'] ) ) {
-				$fromdate_arr = explode( '-', $_GET['fromdate'] );
-				$fromtime = mktime( 0, 0, 0, $fromdate_arr[1], $fromdate_arr[0], $fromdate_arr[2] );
-			}
-			if ( isset( $_GET['todate'] ) ) {
-				$todate_arr		= explode( '-', $_GET['todate'] );
-				$totime	= mktime( 23, 59, 59, $todate_arr[1], $todate_arr[0], $todate_arr[2] );
-			}
-
-			if ( isset( $_GET['pre_filter'] ) ) {
-				switch ( $_GET['pre_filter'] ) {
-					case 'today':
-						$fromtime = strtotime( 'midnight' );
-						$totime = strtotime( 'tomorrow' )-1;
-						break;
-					case 'last_7days':
-						$fromtime = strtotime( '7 days ago' );
-						$totime = strtotime( 'tomorrow' )-1;
-						break;
-					case 'this_week':
-						$fromtime = strtotime( 'monday this week' );
-						$totime = strtotime( 'sunday this week' );
-						break;
-					case 'last_week':
-						$fromtime = strtotime( 'monday last week' );
-						$totime = strtotime( 'sunday last week' );
-						break;
-					case 'this_month':
-						$fromtime = mktime( 0, 0, 0, date( 'm' ), 1, date( 'Y' ) );
-						$totime = mktime( 0, 0, 0, date( 'm' ), date( 't' ), date( 'Y' ) );
-					case 'last_month':
-						$fromtime = strtotime( 'first day of last month' );
-						$totime = strtotime( 'last day of last month' );
-						break;
-					
-					default:
-						break;
-				}
-			}
-			if ( $fromtime ) {
-				$where .= " AND post_date >= '" . date( 'Y-m-d H:i:s', $fromtime ) . "'";
-			}
-			if ( $totime ) {
-				$where .= " AND post_date <= '" . date( 'Y-m-d H:i:s', $totime ) . "'";
-			}
-		}
-		return $where;
 	}
 
 

@@ -1,29 +1,29 @@
 jQuery(document).ready(function($){
-	jQuery('#fromdate').datepicker({
+	jQuery('#reports_start_date').datepicker({
 		dateFormat : 'dd-mm-yy',
 		onSelect: function(selected) {
-		  jQuery("#todate").datepicker("option","minDate", selected)
+		  jQuery("#reports_end_date").datepicker("option","minDate", selected)
 		}
 	});
-	jQuery('#todate').datepicker({
+	jQuery('#reports_end_date').datepicker({
 		dateFormat : 'dd-mm-yy',
 		maxDate: new Date(),
 		onSelect: function(selected) {
-		  jQuery("#fromdate").datepicker("option","maxDate", selected)
+		  jQuery("#reports_start_date").datepicker("option","maxDate", selected)
 		}
 	});
 	jQuery('.date_filter .form-submit').click(function(){
 			var relUrl	=	document.URL;
 			
-			var fromdate	=	jQuery("#fromdate").val();		
-			var todate		=	jQuery("#todate").val();
+			var fromdate	=	jQuery("#reports_start_date").val();		
+			var todate		=	jQuery("#reports_end_date").val();
 			
 			if( relUrl.indexOf( '?' ) != -1 ){
 				relUrl += '&action=filter';
 			}else{
 				relUrl += '?action=filter';
 			}
-			relUrl	+= '&fromdate='+fromdate+'&todate='+todate;
+			relUrl	+= '&reports_start_date='+fromdate+'&reports_end_date='+todate;
 			
 			jQuery.ajax({
 				type: "GET",
